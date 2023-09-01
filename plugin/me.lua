@@ -9,6 +9,8 @@ local function open_editor_window(reg)
     local bname = "@" .. reg
     vim.cmd(win_height .. "new " .. bname)
 
+    vim.wo.winfixheight = win_height
+
     vim.bo.bufhidden = "wipe"
     vim.bo.swapfile = false
     vim.bo.buflisted = false
