@@ -22,9 +22,11 @@ local function open_editor_window(reg)
 
     vim.opt_local.number = false
 
-    local reg_content = vim.fn.getreg(reg)
-    vim.api.nvim_buf_set_text(0, 0, 0, 0 ,0, {reg_content})
-    vim.bo.modified = false
+    if reg:match("[a-z]") then
+        local reg_content = vim.fn.getreg(reg)
+        vim.api.nvim_buf_set_text(0, 0, 0, 0 ,0, {reg_content})
+        vim.bo.modified = false
+    end
 
     vim.api.nvim_create_autocmd({"BufWriteCmd"}, {
         buffer = 0,
