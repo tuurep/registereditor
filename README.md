@@ -1,4 +1,4 @@
-# me (macro editor)
+# registereditor
 
 > Vim Macros are awesome. But it's hard to get it right on the first try.
 
@@ -8,20 +8,22 @@ I couldn't agree more, so I tried his plugin [vim-macroeditor](https://github.co
 
 It's a tiny plugin, 27 lines of VimScript, so it's easy to edit. I've rewritten it in Lua and modified the following:
 
-* Shorter command name (just `:Me`)
-* Split below by default (next to cmdline preferable)
-* Set window height 1 and `nonumber`
-* Show name of the register in the statusline
-* Check that argument is a valid macro register (a-z or A-Z)
-* Allow editing a macro that hasn't been created yet
-    * This already works in the original, but gives an unnecessary error
-* Allow more than one macro editor window open at the same time
+* Now you can edit any register, not just macros
+    * Though the best use is for editing macros, editing other types of registers is basically the same thing, so just allow it
+* Macros can be edited on multiple lines (lines concatenated in register)
+* Short command (just `:Re`)
+* Checks that argument is a valid register
+* No warnings when editing a register that wasn't already set
+* Allows more than one window open at the same time
+* Window shows register name in statusline
+* Window height is set based on number of lines in register
+* Always splits window below
 
 Big thanks to [dohsimpson](https://github.com/dohsimpson) for sharing the original plugin.
 
 ## Usage
 
-Start editing a macro with `:Me <register>`
+Start editing a register with `:Re <register>`
 
 Update `<register>` contents with `:wq`
 
