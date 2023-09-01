@@ -5,6 +5,11 @@ local function set_register(reg)
 end
 
 local function open_editor_window(reg)
+    if reg:len() > 1 or not reg:match("[a-zA-Z]") then
+        print("Not a macro register: @" .. reg)
+        return
+    end
+
     local win_height = 1
     local bname = "@" .. reg
     vim.cmd(win_height .. "new " .. bname)
