@@ -9,8 +9,9 @@ I couldn't agree more, so I tried his plugin [vim-macroeditor](https://github.co
 It's a tiny plugin, 27 lines of VimScript, so it's easy to edit. I've rewritten it in Lua and modified the following:
 
 * Shorter command name (just `:Me`)
-* Show name of the register in the statusline
+* Split below by default (next to cmdline preferable)
 * Set window height 1 and `nonumber`
+* Show name of the register in the statusline
 * Check that argument is a valid macro register (a-z or A-Z)
 * Allow editing a macro that hasn't been created yet
     * This already works in the original, but gives an unnecessary error

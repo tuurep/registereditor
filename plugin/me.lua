@@ -10,17 +10,19 @@ local function open_editor_window(reg)
         return
     end
 
-    local win_height = 1
-    local bname = "@" .. reg
-    vim.cmd(win_height .. "new " .. bname)
+    -- window settings
+    local split_direction = "below" -- "below" or "above"
+    local window_height = 1
+    local statusline_text = "@" .. reg
 
-    vim.wo.winfixheight = win_height
+    vim.cmd(split_direction .. " " .. window_height .. "new " .. statusline_text)
+
+    vim.wo.winfixheight = window_height
+    vim.opt_local.number = false
 
     vim.bo.bufhidden = "wipe"
     vim.bo.swapfile = false
     vim.bo.buflisted = false
-
-    vim.opt_local.number = false
 
     if reg:match("[a-z]") then
         local reg_content = vim.fn.getreg(reg)
