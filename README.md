@@ -36,6 +36,23 @@ When you need to insert special characters like `<Esc>` (displayed as `^[`) in a
 
 Newlines in registers are stored as `^J` (see `:h NL-used-for-Nul`). This causes an actual <kbd>Ctrl</kbd> + <kbd>j</kbd> keypress in a macro.
 
-That's why macros should be written only on the first line of the buffer with no empty lines after.
+That's why macros should be written only on the first line of the registereditor buffer with no empty lines after.
 
-When a newline at the end of the register is desired, the buffer should end in an empty line.
+When a newline at the end of the register is desired, the registereditor buffer should end in an empty line.
+
+## Editing registers with no plugins at all
+
+This plugin is in essence a less cumbersome alternative to one of the following methods:
+
+Example register `q`
+
+1. On the command line:
+    * `:let @q = "<C-r>q"`
+    * Register `q` contents are pasted on commandline for editing
+
+2. Temporarily pasting to a buffer for editing:
+    * `"qp`
+    * Edit inside buffer
+    * Yank it back using something like:
+        * `"qy` . . .
+        * `"qd` . . .
