@@ -48,9 +48,9 @@ local function open_editor_window(reg)
 
     local window_height = #buf_lines
     local split_direction = "below" -- "below" or "above"
-    local statusline_text = "@\\" .. reg
+    local buffer_name = "@\\" .. reg
 
-    vim.cmd(split_direction .. " " .. window_height .. "new " .. statusline_text)
+    vim.cmd(split_direction .. " " .. window_height .. "new " .. buffer_name)
 
     vim.wo.winfixheight = window_height
 
