@@ -10,7 +10,8 @@ It's a tiny plugin, 27 lines of VimScript, so it's easy to edit. I've rewritten 
 
 * Now you can edit any register, not just macros
     * Though the best use is for editing macros, editing other types of registers is basically the same thing, so just allow it
-* Short command (just `:Re`)
+* The command is `:R[egisterEdit]`
+    * Best to use with just `:R`
 * Checks that argument is a valid register
 * No warnings when editing a register that wasn't already set
 * Allows more than one window open at the same time
@@ -22,7 +23,7 @@ Big thanks to [dohsimpson](https://github.com/dohsimpson) for sharing the origin
 
 ## Usage
 
-Start editing a register with `:Re <register>`
+Start editing a register with `:R <register>`
 
 Update `<register>` contents with `:wq`
 

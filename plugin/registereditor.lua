@@ -75,6 +75,6 @@ local function open_editor_window(reg)
     })
 end
 
-vim.api.nvim_create_user_command("Re", function(opts)
+vim.api.nvim_create_user_command("RegisterEdit", function(opts)
     open_editor_window(opts.args)
 end, {nargs=1})
