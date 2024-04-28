@@ -29,31 +29,27 @@ local function set_register(reg)
 end
 
 local function open_editor_window(reg)
-    local is_reg =      reg:match('["0-9a-zA-Z-*+.:%%#/=_]')
-    local is_append =   reg:match("[A-Z]")
-    local is_readonly = reg:match("[.:%%#]")
 
-    if reg:len() > 1 or not is_reg then
+    if reg:len() > 1 or not reg:match('["0-9a-zA-Z-*+.:%%#/=_]') then
         print("Not a register: @" .. reg)
         return
     end
 
-    local reg_contents = ""
+    local reg_content = ""
 
-    if not is_append then
-        reg_contents = vim.fn.getreg(reg)
+    -- Registers A-Z are append registers, they should have no initial content
+    if not reg:match("[A-Z]") then
+        reg_content = vim.fn.getreg(reg)
     end
 
-    local buf_lines = reg_contents:split("\n")
-
+    local buf_lines = reg_content:split("\n")
     local window_height = #buf_lines
-    local split_direction = "below" -- "below" or "above"
-    local buffer_name = "@\\" .. reg
 
-    vim.cmd(split_direction .. " " .. window_height .. "new " .. buffer_name)
+    vim.cmd("below " .. window_height .. "new @\\" .. reg)
 
-    vim.wo.winfixheight = window_height
+    vim.wo.winfixheight = true
 
+    -- Scratch buffer settings
     vim.bo.bufhidden = "wipe"
     vim.bo.swapfile = false
     vim.bo.buflisted = false
@@ -61,8 +57,9 @@ local function open_editor_window(reg)
     vim.api.nvim_buf_set_lines(0, 0, -1, false, buf_lines)
 
     vim.bo.modified = false
-
-    if is_readonly then
+    
+    -- Special readonly registers
+    if reg:match("[.:%%#]") then
         vim.bo.readonly = true
     end
 
