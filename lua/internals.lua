@@ -46,9 +46,32 @@ local function open_editor_window(reg)
     local buf_lines = reg_content:split("\n")
     local window_height = #buf_lines
 
+    -- keep track of existing equalalways setting, and set equalalways to
+    -- false. See https://github.com/tuurep/registereditor/issues/1 for
+    -- details.
+    local old_equalalways = vim.o.equalalways
+    vim.o.equalalways = false
+
+    -- get information about old window
+    local old_window_id = vim.fn.win_getid()
+    local old_window_height = vim.api.nvim_win_get_height(old_window_id)
+
+    -- make sure the old window is big enough to split
+    vim.api.nvim_win_set_height(old_window_id, old_window_height + 2)
+
+    -- open the new window
     vim.cmd("below " .. window_height .. "new @\\" .. reg)
 
+    -- return the old window to its previous size
+    vim.api.nvim_win_set_height(old_window_id, old_window_height)
+
+    -- resize the new window back to its proper size.
+    vim.api.nvim_win_set_height(0, window_height)
+
     vim.wo.winfixheight = true
+
+    -- restore the original equalalways setting
+    vim.o.equalalways = old_equalalways
 
     -- Scratch buffer settings
     vim.bo.bufhidden = "wipe"
