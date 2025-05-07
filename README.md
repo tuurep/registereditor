@@ -21,6 +21,16 @@ It's a tiny plugin, 27 lines of VimScript, so it's easy to edit. I've rewritten 
 
 Big thanks to [dohsimpson](https://github.com/dohsimpson) for sharing the original plugin.
 
+## Installation
+
+With `lazy.nvim`:
+
+```lua
+{
+    'tuurep/registereditor',
+}
+```
+
 ## Usage
 
 Start editing a register with `:R <register>`
