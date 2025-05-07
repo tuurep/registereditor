@@ -30,7 +30,7 @@ local function set_register(reg)
     end
 end
 
-M.open_editor_window = function(reg)
+local function open_editor_window(reg)
     if reg:len() > 1 or not reg:match('["0-9a-zA-Z-*+.:%%#/=_]') then
         print("Not a register: @" .. reg)
         return
@@ -71,6 +71,32 @@ M.open_editor_window = function(reg)
             set_register(reg)
         end,
     })
+end
+
+local function check_string_is_register(value)
+    return value:len() == 1 and value:match('["0-9a-zA-Z-*+.:%%#/=_]')
+end
+
+M.open_all_windows = function(arg)
+    -- check all args and build table
+    local registers = {}
+    local count = 0
+    for register in arg:gmatch("[^%s]+") do
+        if not check_string_is_register(register) then
+            print("Not a register: @" .. register)
+            return
+        end
+        count = count + 1
+        table.insert(registers, register)
+    end
+
+    -- open a new editor window for each register specified
+    for i, register in ipairs(registers) do
+        open_editor_window(register)
+        if i ~= count then
+            vim.cmd("wincmd p")
+        end
+    end
 end
 
 return M
