@@ -6,4 +6,18 @@ local function setup_user_commands()
     end, { nargs = "+" })
 end
 
+local function setup_autocommands()
+    -- create a new autocommand group, clearing all previous autocommands
+    local autocommand_group = vim.api.nvim_create_augroup(
+        "registereditor_autocommands",
+        { clear = true }
+    )
+
+    -- update open RegisterEdit buffers when a macro is recorded
+    vim.api.nvim_create_autocmd({ "RecordingLeave" }, {
+        callback = internals.update_register_buffers,
+    })
+end
+
 setup_user_commands()
+setup_autocommands()

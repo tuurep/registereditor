@@ -13,6 +13,11 @@ function string:split(sep)
     return result
 end
 
+-- https://gist.github.com/kgriffs/124aae3ac80eefe57199451b823c24ec
+function string:endswith(ending)
+    return ending == "" or self:sub(-#ending) == ending
+end
+
 local function set_register(reg)
     vim.fn.setreg(reg, "")
 
@@ -95,6 +100,28 @@ M.open_all_windows = function(arg)
         open_editor_window(register)
         if i ~= count then
             vim.cmd("wincmd p")
+        end
+    end
+end
+
+-- update all open RegisterEdit buffers based on the macro that was just
+-- recorded
+M.update_register_buffers = function()
+    -- get the register that is being recorded
+    local register = vim.fn.reg_recording()
+    -- get a list of all buffers
+    local all_buffers = vim.api.nvim_list_bufs()
+    -- iterate over all buffers, updating the matching ones
+    for _, buffer in pairs(all_buffers) do
+        -- get the name of the buffer
+        local buffer_name = vim.api.nvim_buf_get_name(buffer)
+        -- if the buffer is named @<register>, then it should be updated
+        if buffer_name:endswith("@" .. register) then
+            -- get the content of the register
+            local reg_content = vim.api.nvim_get_vvar("event").regcontents
+            local buf_lines = reg_content:split("\n")
+            -- update the buffer with the register contents
+            vim.api.nvim_buf_set_lines(buffer, 0, -1, false, buf_lines)
         end
     end
 end
