@@ -13,6 +13,11 @@ function string:split(sep)
     return result
 end
 
+-- https://gist.github.com/kgriffs/124aae3ac80eefe57199451b823c24ec
+function string:endswith(ending)
+    return ending == "" or self:sub(-#ending) == ending
+end
+
 local function set_register(reg)
     vim.fn.setreg(reg, "")
 
@@ -51,6 +56,7 @@ local function open_editor_window(reg)
     vim.wo.winfixheight = true
 
     -- Scratch buffer settings
+    vim.bo.filetype = "registereditor"
     vim.bo.bufhidden = "wipe"
     vim.bo.swapfile = false
     vim.bo.buflisted = false
@@ -95,6 +101,37 @@ M.open_all_windows = function(arg)
         open_editor_window(register)
         if i ~= count then
             vim.cmd("wincmd p")
+        end
+    end
+end
+
+-- update all open RegisterEdit buffers based on the macro that was just
+-- recorded
+M.update_register_buffers = function(yank)
+    -- get the register that is being recorded or yanked into
+    local register = yank and vim.api.nvim_get_vvar("event").regname
+        or vim.fn.reg_recording()
+    -- get a list of all buffers
+    local all_buffers = vim.api.nvim_list_bufs()
+    -- iterate over all buffers, updating the matching ones
+    for _, buffer in pairs(all_buffers) do
+        -- get info about the buffer
+        local buffer_name = vim.api.nvim_buf_get_name(buffer)
+        local buffer_filetype =
+            vim.api.nvim_get_option_value("filetype", { buf = buffer })
+        -- if the buffer has the 'registereditor' filetype and is named
+        -- @<register>, then it should be updated
+        if
+            buffer_filetype == "registereditor"
+            and buffer_name:endswith("@" .. register)
+        then
+            -- get the content of the register
+            local reg_content = vim.api.nvim_get_vvar("event").regcontents
+            local buf_lines = yank and reg_content or reg_content:split("\n")
+            -- update the buffer with the register contents
+            vim.schedule(function()
+                vim.api.nvim_buf_set_lines(buffer, 0, -1, false, buf_lines)
+            end)
         end
     end
 end
