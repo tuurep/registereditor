@@ -56,6 +56,7 @@ local function open_editor_window(reg)
     vim.wo.winfixheight = true
 
     -- Scratch buffer settings
+    vim.bo.filetype = "registereditor"
     vim.bo.bufhidden = "wipe"
     vim.bo.swapfile = false
     vim.bo.buflisted = false
@@ -113,10 +114,16 @@ M.update_register_buffers = function()
     local all_buffers = vim.api.nvim_list_bufs()
     -- iterate over all buffers, updating the matching ones
     for _, buffer in pairs(all_buffers) do
-        -- get the name of the buffer
+        -- get info about the buffer
         local buffer_name = vim.api.nvim_buf_get_name(buffer)
-        -- if the buffer is named @<register>, then it should be updated
-        if buffer_name:endswith("@" .. register) then
+        local buffer_filetype =
+            vim.api.nvim_get_option_value("filetype", { buf = buffer })
+        -- if the buffer has the 'registereditor' filetype and is named
+        -- @<register>, then it should be updated
+        if
+            buffer_filetype == "registereditor"
+            and buffer_name:endswith("@" .. register)
+        then
             -- get the content of the register
             local reg_content = vim.api.nvim_get_vvar("event").regcontents
             local buf_lines = reg_content:split("\n")
