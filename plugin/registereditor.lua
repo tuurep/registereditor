@@ -15,7 +15,16 @@ local function setup_autocommands()
 
     -- update open RegisterEdit buffers when a macro is recorded
     vim.api.nvim_create_autocmd({ "RecordingLeave" }, {
-        callback = internals.update_register_buffers,
+        callback = function()
+            internals.update_register_buffers(false)
+        end,
+    })
+
+    -- update open RegisterEdit buffers when text is yanked into a register
+    vim.api.nvim_create_autocmd({ "TextYankPost" }, {
+        callback = function()
+            internals.update_register_buffers(true)
+        end,
     })
 end
 

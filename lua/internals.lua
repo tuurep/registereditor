@@ -107,9 +107,10 @@ end
 
 -- update all open RegisterEdit buffers based on the macro that was just
 -- recorded
-M.update_register_buffers = function()
-    -- get the register that is being recorded
-    local register = vim.fn.reg_recording()
+M.update_register_buffers = function(yank)
+    -- get the register that is being recorded or yanked into
+    local register = yank and vim.api.nvim_get_vvar("event").regname
+        or vim.fn.reg_recording()
     -- get a list of all buffers
     local all_buffers = vim.api.nvim_list_bufs()
     -- iterate over all buffers, updating the matching ones
@@ -126,9 +127,11 @@ M.update_register_buffers = function()
         then
             -- get the content of the register
             local reg_content = vim.api.nvim_get_vvar("event").regcontents
-            local buf_lines = reg_content:split("\n")
+            local buf_lines = yank and reg_content or reg_content:split("\n")
             -- update the buffer with the register contents
-            vim.api.nvim_buf_set_lines(buffer, 0, -1, false, buf_lines)
+            vim.schedule(function()
+                vim.api.nvim_buf_set_lines(buffer, 0, -1, false, buf_lines)
+            end)
         end
     end
 end
