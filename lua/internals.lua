@@ -1,5 +1,9 @@
 local M = {}
 
+-- maximum height of a registereditor window. This can become a configurable
+-- option in the future
+local MAX_BUFFER_LINES = 20
+
 -- https://stackoverflow.com/questions/72386387/lua-split-string-to-table
 -- Split string into table on newlines, include empty lines (\n\n\n)
 function string:split(sep)
@@ -44,7 +48,7 @@ local function open_editor_window(reg)
     end
 
     local buf_lines = reg_content:split("\n")
-    local window_height = #buf_lines
+    local window_height = math.min(#buf_lines, MAX_BUFFER_LINES)
 
     -- keep track of existing equalalways setting, and set equalalways to
     -- false. See https://github.com/tuurep/registereditor/issues/1 for
