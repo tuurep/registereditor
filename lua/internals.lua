@@ -104,26 +104,93 @@ local function check_string_is_register(value)
     return value:len() == 1 and value:match('["0-9a-zA-Z-*+.:%%#/=_]')
 end
 
-M.open_all_windows = function(arg)
-    -- check all args and build table
+-- parse a list of single-character registers from a string argument. For
+-- example, if the argument is "a b c" then the list should be {"a", "b", "c"}
+local function parse_register_list(arg)
     local registers = {}
-    local count = 0
     for register in arg:gmatch("[^%s]+") do
         if not check_string_is_register(register) then
             print("Not a register: @" .. register)
             return
         end
-        count = count + 1
         table.insert(registers, register)
+    end
+    return registers
+end
+
+M.open_all_windows = function(arg)
+    -- check all args and build table
+    local registers = parse_register_list(arg)
+    if #registers == 0 then
+        return
     end
 
     -- open a new editor window for each register specified
     for i, register in ipairs(registers) do
         open_editor_window(register)
-        if i ~= count then
+        if i ~= #registers then
             vim.cmd("wincmd p")
         end
     end
+end
+
+-- tells whether or not a buffer belongs to this plugin
+local function check_buffer_is_register_buffer(buffer)
+    return vim.api.nvim_get_option_value("filetype", { buf = buffer })
+        == "registereditor"
+end
+
+-- perform an action on all registereditor buffers
+local function loop_over_register_buffers(action)
+    -- iterate over all buffers
+    for _, buffer in pairs(vim.api.nvim_list_bufs()) do
+        -- ensure the buffer has the 'registereditor' filetype
+        if check_buffer_is_register_buffer(buffer) then
+            action(buffer)
+        end
+    end
+end
+
+local function get_register_from_buffer(buffer)
+    return string.sub(vim.api.nvim_buf_get_name(buffer), -1, -1)
+end
+
+local function close_buffer(buffer)
+    vim.cmd("bd " .. buffer)
+end
+
+M.close_windows = function(arg)
+    -- see what registers were specified. If there were none, then registers
+    -- will be nil
+    local registers = nil
+    if arg ~= nil and arg ~= "" then
+        registers = parse_register_list(arg)
+    end
+
+    -- loop over all the buffers and close the appropriate ones.
+    loop_over_register_buffers(function(buffer)
+        -- if the registers list is nil or empty, then close all the buffers
+        if registers == nil or #registers == 0 then
+            close_buffer(buffer)
+        else
+            -- find out what register the buffer corresponds to
+            local buffer_register = get_register_from_buffer(buffer)
+
+            -- determine if the buffer should be closed based on the supplied
+            -- list of registers
+            local should_close = false
+            for _, register in pairs(registers) do
+                if register == buffer_register then
+                    should_close = true
+                end
+            end
+
+            -- close the buffer if necessary
+            if should_close then
+                close_buffer(buffer)
+            end
+        end
+    end)
 end
 
 return M
