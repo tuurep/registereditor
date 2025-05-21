@@ -78,6 +78,7 @@ local function open_editor_window(reg)
     vim.o.equalalways = old_equalalways
 
     -- Scratch buffer settings
+    vim.bo.filetype = "registereditor"
     vim.bo.bufhidden = "wipe"
     vim.bo.swapfile = false
     vim.bo.buflisted = false
