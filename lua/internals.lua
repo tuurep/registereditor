@@ -17,6 +17,11 @@ function string:split(sep)
     return result
 end
 
+local function split_first_token(value)
+    local first, rest = value:match("^(%S+)%s*(.*)")
+    return { first = first, rest = rest }
+end
+
 local function set_register(reg)
     vim.fn.setreg(reg, "")
 
@@ -119,7 +124,7 @@ local function parse_register_list(arg)
     return registers
 end
 
-M.open_all_windows = function(arg)
+local function open_all_windows(arg)
     -- check all args and build table
     local registers = parse_register_list(arg)
     if #registers == 0 then
@@ -160,7 +165,7 @@ local function close_buffer(buffer)
     vim.cmd("bd " .. buffer)
 end
 
-M.close_windows = function(arg)
+local function close_windows(arg)
     -- see what registers were specified. If there were none, then registers
     -- will be nil
     local registers = nil
@@ -192,6 +197,21 @@ M.close_windows = function(arg)
             end
         end
     end)
+end
+
+-- main entry point for the :RegisterEdit user command
+M.register_edit_command = function(arg)
+    -- split the first argument from the rest of the arguments
+    local split_result = split_first_token(arg)
+
+    -- check if the first argument is an action
+    if split_result.first == "open" then
+        open_all_windows(split_result.rest)
+    elseif split_result.first == "close" then
+        close_windows(split_result.rest)
+    else
+        open_all_windows(arg)
+    end
 end
 
 return M
