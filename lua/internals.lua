@@ -127,7 +127,7 @@ end
 local function open_all_windows(arg)
     -- check all args and build table
     local registers = parse_register_list(arg)
-    if #registers == 0 then
+    if registers == nil or #registers == 0 then
         return
     end
 
