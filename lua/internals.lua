@@ -39,10 +39,24 @@ local function set_register(reg)
     end
 end
 
--- set the contents of a buffer and mark it is not modified
+-- set the contents of a buffer and mark it as not modified
 local function set_buffer_content(buffer, content)
-    vim.api.nvim_buf_set_lines(buffer, 0, -1, false, content)
-    vim.api.nvim_set_option_value("modified", false, { buf = buffer })
+    -- get existing buffer content
+    local existing_content = vim.api.nvim_buf_get_lines(buffer, 0, -1, false)
+
+    -- determine if the content changed or not
+    local content_changed = false
+    for line_number, line in ipairs(existing_content) do
+        if line ~= content[line_number] then
+            content_changed = true
+        end
+    end
+
+    -- if the content changed, then actually modify the buffer
+    if content_changed then
+        vim.api.nvim_buf_set_lines(buffer, 0, -1, false, content)
+        vim.api.nvim_set_option_value("modified", false, { buf = buffer })
+    end
 end
 
 local function open_editor_window(reg)
