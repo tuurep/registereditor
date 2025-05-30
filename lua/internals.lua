@@ -17,6 +17,11 @@ function string:split(sep)
     return result
 end
 
+-- https://gist.github.com/kgriffs/124aae3ac80eefe57199451b823c24ec
+function string:endswith(ending)
+    return ending == "" or self:sub(-#ending) == ending
+end
+
 local function set_register(reg)
     vim.fn.setreg(reg, "")
 
@@ -31,6 +36,26 @@ local function set_register(reg)
     -- If last line is text, ^J is omitted: for macros or something like "qy$
     if last_line ~= "" then
         vim.cmd("let @" .. reg .. " ..= '" .. last_line .. "'")
+    end
+end
+
+-- set the contents of a buffer and mark it as not modified
+local function set_buffer_content(buffer, content)
+    -- get existing buffer content
+    local existing_content = vim.api.nvim_buf_get_lines(buffer, 0, -1, false)
+
+    -- determine if the content changed or not
+    local content_changed = false
+    for line_number, line in ipairs(existing_content) do
+        if line ~= content[line_number] then
+            content_changed = true
+        end
+    end
+
+    -- if the content changed, then actually modify the buffer
+    if content_changed then
+        vim.api.nvim_buf_set_lines(buffer, 0, -1, false, content)
+        vim.api.nvim_set_option_value("modified", false, { buf = buffer })
     end
 end
 
@@ -78,13 +103,12 @@ local function open_editor_window(reg)
     vim.o.equalalways = old_equalalways
 
     -- Scratch buffer settings
+    vim.bo.filetype = "registereditor"
     vim.bo.bufhidden = "wipe"
     vim.bo.swapfile = false
     vim.bo.buflisted = false
 
-    vim.api.nvim_buf_set_lines(0, 0, -1, false, buf_lines)
-
-    vim.bo.modified = false
+    set_buffer_content(0, buf_lines)
 
     -- Special readonly registers
     if reg:match("[.:%%#]") then
@@ -124,6 +148,59 @@ M.open_all_windows = function(arg)
             vim.cmd("wincmd p")
         end
     end
+end
+
+-- tells whether or not a buffer belongs to this plugin
+local function check_buffer_is_register_buffer(buffer)
+    return vim.api.nvim_get_option_value("filetype", { buf = buffer })
+        == "registereditor"
+end
+
+-- updates a given buffer with the given content if it matches the given
+-- register
+local function update_register_buffer(buffer, register, content)
+    -- if the buffer is named @<register>, then it should be updated
+    if vim.api.nvim_buf_get_name(buffer):endswith("@" .. register) then
+        -- update the buffer with the register contents
+        vim.schedule(function()
+            set_buffer_content(buffer, content)
+        end)
+    end
+end
+
+-- perform an action on all registereditor buffers
+local function loop_over_register_buffers(action)
+    -- iterate over all buffers
+    for _, buffer in pairs(vim.api.nvim_list_bufs()) do
+        -- ensure the buffer has the 'registereditor' filetype
+        if check_buffer_is_register_buffer(buffer) then
+            action(buffer)
+        end
+    end
+end
+
+-- update all open RegisterEdit buffers
+M.update_register_buffers = function(register, content)
+    loop_over_register_buffers(function(buffer)
+        update_register_buffer(buffer, register, content)
+    end)
+end
+
+-- updates a buffer to match the contents of the underlying register
+local function refresh_register_buffer(buffer)
+    -- find the register for this buffer
+    local register = string.sub(vim.api.nvim_buf_get_name(buffer), -1, -1)
+    assert(check_string_is_register(register))
+    -- get the contents of the register
+    local content = vim.fn.getreg(register):split("\n")
+    -- update the buffer contents to match the register
+    set_buffer_content(buffer, content)
+end
+
+M.refresh_all_register_buffers = function()
+    loop_over_register_buffers(function(buffer)
+        refresh_register_buffer(buffer)
+    end)
 end
 
 return M
