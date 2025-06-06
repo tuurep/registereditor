@@ -60,6 +60,10 @@ local function set_buffer_content(buffer, content)
     if content_changed then
         vim.api.nvim_buf_set_lines(buffer, 0, -1, false, content)
         vim.api.nvim_set_option_value("modified", false, { buf = buffer })
+        vim.api.nvim_win_set_height(
+            vim.fn.bufwinid(buffer),
+            math.min(#content, MAX_BUFFER_LINES)
+        )
     end
 end
 
@@ -168,10 +172,6 @@ local function update_register_buffer(buffer, register, content)
         -- update the buffer with the register contents
         vim.schedule(function()
             set_buffer_content(buffer, content)
-            vim.api.nvim_win_set_height(
-                vim.fn.bufwinid(buffer),
-                math.min(#content, MAX_BUFFER_LINES)
-            )
         end)
     end
 end
