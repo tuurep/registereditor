@@ -112,7 +112,7 @@ local function open_editor_window(reg)
     vim.bo.swapfile = false
     vim.bo.buflisted = false
 
-    set_buffer_content(0, buf_lines)
+    set_buffer_content(vim.fn.bufnr(), buf_lines)
 
     -- Special readonly registers
     if reg:match("[.:%%#]") then
