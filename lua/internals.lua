@@ -168,6 +168,10 @@ local function update_register_buffer(buffer, register, content)
         -- update the buffer with the register contents
         vim.schedule(function()
             set_buffer_content(buffer, content)
+            vim.api.nvim_win_set_height(
+                vim.fn.bufwinid(buffer),
+                math.min(#content, MAX_BUFFER_LINES)
+            )
         end)
     end
 end
