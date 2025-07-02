@@ -78,6 +78,13 @@ local function setup_autocommands()
                     vim.fn.getreg(register):split("\n")
                 )
             end
+
+            -- update the - register. There are many ways to trigger this
+            -- update, but they all end up triggering the TextYankPost event
+            internals.update_register_buffers(
+                "-",
+                vim.fn.getreg("-"):split("\n")
+            )
         end,
     })
 
@@ -86,21 +93,6 @@ local function setup_autocommands()
         group = autocommand_group,
         callback = vim.schedule_wrap(function()
             internals.refresh_all_register_buffers()
-        end),
-    })
-
-    -- update open RegisterEdit buffers for the - register. Vim has many ways
-    -- for the - register to update internally. Each event in this list needs
-    -- at least one example as a justification for being included
-    -- * TextChanged - needed when using x from normal mode
-    -- * InsertEnter - needed when using s from visual mode
-    vim.api.nvim_create_autocmd({ "TextChanged", "InsertEnter" }, {
-        group = autocommand_group,
-        callback = vim.schedule_wrap(function()
-            internals.update_register_buffers(
-                "-",
-                vim.fn.getreg("-"):split("\n")
-            )
         end),
     })
 
