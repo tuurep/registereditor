@@ -199,8 +199,8 @@ local function close_windows(arg)
     end)
 end
 
--- main entry point for the :RegisterEdit user command
-M.register_edit_command = function(arg)
+-- main entry point for the :RegisterEditor user command
+M.registereditor_command = function(arg)
     -- split the first argument from the rest of the arguments
     local split_result = split_first_token(arg)
 
