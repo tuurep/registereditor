@@ -129,6 +129,8 @@ local function setup_keymaps()
     end)
     add_key_trigger("n", "*", update_slash_register)
     add_key_trigger("n", "#", update_slash_register)
+    add_key_trigger("v", "*", update_slash_register)
+    add_key_trigger("v", "#", update_slash_register)
 end
 
 setup_user_commands()
