@@ -39,7 +39,7 @@ local function setup_autocommands()
         { clear = true }
     )
 
-    -- update open RegisterEdit buffers when a macro is recorded
+    -- update open registereditor buffers when a macro is recorded
     vim.api.nvim_create_autocmd({ "RecordingLeave" }, {
         group = autocommand_group,
         callback = function()
@@ -50,7 +50,7 @@ local function setup_autocommands()
         end,
     })
 
-    -- update open RegisterEdit buffers when text is yanked into a register
+    -- update open registereditor buffers when text is yanked into a register
     vim.api.nvim_create_autocmd({ "TextYankPost" }, {
         group = autocommand_group,
         callback = function()
@@ -88,7 +88,7 @@ local function setup_autocommands()
         end,
     })
 
-    -- update open RegisterEdit buffers after using the command line
+    -- update open registereditor buffers after using the command line
     vim.api.nvim_create_autocmd({ "CmdlineLeave" }, {
         group = autocommand_group,
         callback = vim.schedule_wrap(function()
@@ -96,7 +96,7 @@ local function setup_autocommands()
         end),
     })
 
-    -- update open RegisterEdit buffers for the . register.
+    -- update open registereditor buffers for the . register.
     vim.api.nvim_create_autocmd({ "InsertLeave" }, {
         group = autocommand_group,
         callback = function()
@@ -107,7 +107,7 @@ local function setup_autocommands()
         end,
     })
 
-    -- update open RegisterEdit buffers for the # and % registers.
+    -- update open registereditor buffers for the # and % registers.
     vim.api.nvim_create_autocmd({ "WinEnter", "BufEnter" }, {
         group = autocommand_group,
         callback = function()

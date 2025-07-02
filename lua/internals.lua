@@ -187,7 +187,7 @@ local function loop_over_register_buffers(action)
     end
 end
 
--- update all open RegisterEdit buffers
+-- update all open registereditor buffers
 M.update_register_buffers = function(register, content)
     loop_over_register_buffers(function(buffer)
         update_register_buffer(buffer, register, content)
