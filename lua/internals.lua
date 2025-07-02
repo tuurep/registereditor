@@ -136,7 +136,8 @@ local function check_string_is_register(value)
     return value:len() == 1 and value:match('["0-9a-zA-Z-*+.:%%#/=_]')
 end
 
-M.open_all_windows = function(arg)
+-- main entry point for the :RegisterEditor user command
+M.registereditor_command = function(arg)
     -- check all args and build table
     local registers = {}
     local count = 0
