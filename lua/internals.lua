@@ -17,6 +17,11 @@ function string:split(sep)
     return result
 end
 
+local function split_first_token(value)
+    local first, rest = value:match("^(%S+)%s*(.*)")
+    return { first = first, rest = rest }
+end
+
 local function set_register(reg)
     vim.fn.setreg(reg, "")
 
@@ -78,6 +83,7 @@ local function open_editor_window(reg)
     vim.o.equalalways = old_equalalways
 
     -- Scratch buffer settings
+    vim.bo.filetype = "registereditor"
     vim.bo.bufhidden = "wipe"
     vim.bo.swapfile = false
     vim.bo.buflisted = false
@@ -104,25 +110,99 @@ local function check_string_is_register(value)
     return value:len() == 1 and value:match('["0-9a-zA-Z-*+.:%%#/=_]')
 end
 
-M.open_all_windows = function(arg)
-    -- check all args and build table
+-- parse a list of single-character registers from a string argument. For
+-- example, if the argument is "a b c" then the list should be {"a", "b", "c"}
+local function parse_register_list(arg)
     local registers = {}
-    local count = 0
     for register in arg:gmatch("[^%s]+") do
         if not check_string_is_register(register) then
             print("Not a register: @" .. register)
             return
         end
-        count = count + 1
         table.insert(registers, register)
+    end
+    return registers
+end
+
+local function open_all_windows(arg)
+    -- check all args and build table
+    local registers = parse_register_list(arg)
+    if registers == nil or #registers == 0 then
+        return
     end
 
     -- open a new editor window for each register specified
     for i, register in ipairs(registers) do
         open_editor_window(register)
-        if i ~= count then
+        if i ~= #registers then
             vim.cmd("wincmd p")
         end
+    end
+end
+
+-- tells whether or not a buffer belongs to this plugin
+local function check_buffer_is_register_buffer(buffer)
+    return vim.api.nvim_get_option_value("filetype", { buf = buffer })
+        == "registereditor"
+end
+
+-- perform an action on all registereditor buffers
+local function loop_over_register_buffers(action)
+    -- iterate over all buffers
+    for _, buffer in pairs(vim.api.nvim_list_bufs()) do
+        -- ensure the buffer has the 'registereditor' filetype
+        if check_buffer_is_register_buffer(buffer) then
+            action(buffer)
+        end
+    end
+end
+
+local function get_register_from_buffer(buffer)
+    return string.sub(vim.api.nvim_buf_get_name(buffer), -1, -1)
+end
+
+local function close_buffer(buffer)
+    vim.cmd("bd " .. buffer)
+end
+
+local function close_windows(arg)
+    -- see what registers were specified. If there were none, then registers
+    -- will be nil
+    local registers = nil
+    if arg ~= nil and arg ~= "" then
+        registers = parse_register_list(arg)
+    end
+
+    -- loop over all the buffers and close the appropriate ones
+    loop_over_register_buffers(function(buffer)
+        -- find out what register the buffer corresponds to
+        local buffer_register = get_register_from_buffer(buffer)
+
+        -- determine if the buffer should be closed based on the supplied
+        -- list of registers. If the registers list is nil or empty, then
+        -- always close the buffer
+        if
+            registers == nil
+            or #registers == 0
+            or vim.tbl_contains(registers, buffer_register)
+        then
+            close_buffer(buffer)
+        end
+    end)
+end
+
+-- main entry point for the :RegisterEditor user command
+M.registereditor_command = function(arg)
+    -- split the first argument from the rest of the arguments
+    local split_result = split_first_token(arg)
+
+    -- check if the first argument is an action
+    if split_result.first == "open" then
+        open_all_windows(split_result.rest)
+    elseif split_result.first == "close" then
+        close_windows(split_result.rest)
+    else
+        open_all_windows(arg)
     end
 end
 
