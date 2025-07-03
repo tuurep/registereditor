@@ -173,28 +173,20 @@ local function close_windows(arg)
         registers = parse_register_list(arg)
     end
 
-    -- loop over all the buffers and close the appropriate ones.
+    -- loop over all the buffers and close the appropriate ones
     loop_over_register_buffers(function(buffer)
-        -- if the registers list is nil or empty, then close all the buffers
-        if registers == nil or #registers == 0 then
+        -- find out what register the buffer corresponds to
+        local buffer_register = get_register_from_buffer(buffer)
+
+        -- determine if the buffer should be closed based on the supplied
+        -- list of registers. If the registers list is nil or empty, then
+        -- always close the buffer
+        if
+            registers == nil
+            or #registers == 0
+            or vim.tbl_contains(registers, buffer_register)
+        then
             close_buffer(buffer)
-        else
-            -- find out what register the buffer corresponds to
-            local buffer_register = get_register_from_buffer(buffer)
-
-            -- determine if the buffer should be closed based on the supplied
-            -- list of registers
-            local should_close = false
-            for _, register in pairs(registers) do
-                if register == buffer_register then
-                    should_close = true
-                end
-            end
-
-            -- close the buffer if necessary
-            if should_close then
-                close_buffer(buffer)
-            end
         end
     end)
 end
