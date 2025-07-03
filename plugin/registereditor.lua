@@ -35,10 +35,8 @@ end
 
 local function setup_autocommands()
     -- create a new autocommand group, clearing all previous autocommands
-    local autocommand_group = vim.api.nvim_create_augroup(
-        "registereditor_autocommands",
-        { clear = true }
-    )
+    local autocommand_group =
+        vim.api.nvim_create_augroup("registereditor_autocommands", { clear = true })
 
     -- update open registereditor buffers when a macro is recorded
     vim.api.nvim_create_autocmd({ "RecordingLeave" }, {
@@ -62,14 +60,8 @@ local function setup_autocommands()
                 event.regname == "" and '"' or event.regname,
                 event.regcontents
             )
-            internals.update_register_buffers(
-                "+",
-                vim.fn.getreg("+"):split("\n")
-            )
-            internals.update_register_buffers(
-                "*",
-                vim.fn.getreg("*"):split("\n")
-            )
+            internals.update_register_buffers("+", vim.fn.getreg("+"):split("\n"))
+            internals.update_register_buffers("*", vim.fn.getreg("*"):split("\n"))
 
             -- update numbered registers
             for register_number = 1, 10 do
@@ -82,10 +74,7 @@ local function setup_autocommands()
 
             -- update the - register. There are many ways to trigger this
             -- update, but they all end up triggering the TextYankPost event
-            internals.update_register_buffers(
-                "-",
-                vim.fn.getreg("-"):split("\n")
-            )
+            internals.update_register_buffers("-", vim.fn.getreg("-"):split("\n"))
         end,
     })
 
@@ -101,10 +90,7 @@ local function setup_autocommands()
     vim.api.nvim_create_autocmd({ "InsertLeave" }, {
         group = autocommand_group,
         callback = function()
-            internals.update_register_buffers(
-                ".",
-                vim.fn.getreg("."):split("\n")
-            )
+            internals.update_register_buffers(".", vim.fn.getreg("."):split("\n"))
         end,
     })
 
@@ -112,14 +98,8 @@ local function setup_autocommands()
     vim.api.nvim_create_autocmd({ "WinEnter", "BufEnter" }, {
         group = autocommand_group,
         callback = function()
-            internals.update_register_buffers(
-                "#",
-                vim.fn.getreg("#"):split("\n")
-            )
-            internals.update_register_buffers(
-                "%",
-                vim.fn.getreg("%"):split("\n")
-            )
+            internals.update_register_buffers("#", vim.fn.getreg("#"):split("\n"))
+            internals.update_register_buffers("%", vim.fn.getreg("%"):split("\n"))
         end,
     })
 end
