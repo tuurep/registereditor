@@ -1,26 +1,11 @@
+local lua_utils = require("lua_utils")
+local vim_utils = require("vim_utils")
+
 local M = {}
 
 -- maximum height of a registereditor window. This can become a configurable
 -- option in the future
 local MAX_BUFFER_LINES = 20
-
--- https://stackoverflow.com/questions/72386387/lua-split-string-to-table
--- Split string into table on newlines, include empty lines (\n\n\n)
-function string:split(sep)
-    local sep = sep or "\n"
-    local result = {}
-    local i = 1
-    for c in (self .. sep):gmatch("(.-)" .. sep) do
-        result[i] = c
-        i = i + 1
-    end
-    return result
-end
-
-local function split_first_token(value)
-    local first, rest = value:match("^(%S+)%s*(.*)")
-    return { first = first, rest = rest }
-end
 
 local function set_register(reg)
     vim.fn.setreg(reg, "")
@@ -39,6 +24,34 @@ local function set_register(reg)
     end
 end
 
+-- set the contents of a buffer and mark it is not modified
+local function set_buffer_content(buffer, content)
+    -- get existing buffer content
+    local existing_content = vim.api.nvim_buf_get_lines(buffer, 0, -1, false)
+
+    -- determine if the content changed or not
+    local content_changed = false
+    if #existing_content ~= #content then
+        content_changed = true
+    else
+        for line_number, line in ipairs(existing_content) do
+            if line ~= content[line_number] then
+                content_changed = true
+            end
+        end
+    end
+
+    -- if the content changed, then actually modify the buffer
+    if content_changed then
+        vim.api.nvim_buf_set_lines(buffer, 0, -1, false, content)
+        vim.api.nvim_set_option_value("modified", false, { buf = buffer })
+        vim.api.nvim_win_set_height(
+            vim.fn.bufwinid(buffer),
+            math.min(#content, MAX_BUFFER_LINES)
+        )
+    end
+end
+
 local function open_editor_window(reg)
     if reg:len() > 1 or not reg:match('["0-9a-zA-Z-*+.:%%#/=_]') then
         print("Not a register: @" .. reg)
@@ -52,7 +65,7 @@ local function open_editor_window(reg)
         reg_content = vim.fn.getreg(reg)
     end
 
-    local buf_lines = reg_content:split("\n")
+    local buf_lines = lua_utils.newline_split(reg_content)
     local window_height = math.min(#buf_lines, MAX_BUFFER_LINES)
 
     -- keep track of existing equalalways setting, and set equalalways to
@@ -88,9 +101,7 @@ local function open_editor_window(reg)
     vim.bo.swapfile = false
     vim.bo.buflisted = false
 
-    vim.api.nvim_buf_set_lines(0, 0, -1, false, buf_lines)
-
-    vim.bo.modified = false
+    set_buffer_content(vim.fn.bufnr(), buf_lines)
 
     -- Special readonly registers
     if reg:match("[.:%%#]") then
@@ -142,8 +153,19 @@ end
 
 -- tells whether or not a buffer belongs to this plugin
 local function check_buffer_is_register_buffer(buffer)
-    return vim.api.nvim_get_option_value("filetype", { buf = buffer })
-        == "registereditor"
+    return vim.api.nvim_get_option_value("filetype", { buf = buffer }) == "registereditor"
+end
+
+-- updates a given buffer with the given content if it matches the given
+-- register
+local function update_register_buffer(buffer, register, content)
+    -- if the buffer is named @<register>, then it should be updated
+    if lua_utils.string_ends_with(vim.api.nvim_buf_get_name(buffer), "@" .. register) then
+        -- update the buffer with the register contents
+        vim.schedule(function()
+            set_buffer_content(buffer, content)
+        end)
+    end
 end
 
 -- perform an action on all registereditor buffers
@@ -157,12 +179,32 @@ local function loop_over_register_buffers(action)
     end
 end
 
-local function get_register_from_buffer(buffer)
-    return string.sub(vim.api.nvim_buf_get_name(buffer), -1, -1)
+-- update all open registereditor buffers
+M.update_register_buffers = function(register, content)
+    loop_over_register_buffers(function(buffer)
+        update_register_buffer(buffer, register, content)
+    end)
 end
 
-local function close_buffer(buffer)
-    vim.cmd("bd " .. buffer)
+-- updates a buffer to match the contents of the underlying register
+local function refresh_register_buffer(buffer)
+    -- find the register for this buffer
+    local register = string.sub(vim.api.nvim_buf_get_name(buffer), -1, -1)
+    assert(check_string_is_register(register))
+    -- get the contents of the register
+    local content = lua_utils.newline_split(vim.fn.getreg(register))
+    -- update the buffer contents to match the register
+    set_buffer_content(buffer, content)
+end
+
+M.refresh_all_register_buffers = function()
+    loop_over_register_buffers(function(buffer)
+        refresh_register_buffer(buffer)
+    end)
+end
+
+local function get_register_from_buffer(buffer)
+    return string.sub(vim.api.nvim_buf_get_name(buffer), -1, -1)
 end
 
 local function close_windows(arg)
@@ -186,7 +228,7 @@ local function close_windows(arg)
             or #registers == 0
             or vim.tbl_contains(registers, buffer_register)
         then
-            close_buffer(buffer)
+            vim_utils.close_buffer(buffer)
         end
     end)
 end
@@ -194,7 +236,7 @@ end
 -- main entry point for the :RegisterEditor user command
 M.registereditor_command = function(arg)
     -- split the first argument from the rest of the arguments
-    local split_result = split_first_token(arg)
+    local split_result = lua_utils.split_first_token(arg)
 
     -- check if the first argument is an action
     if split_result.first == "open" then
