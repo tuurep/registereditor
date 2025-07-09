@@ -104,10 +104,11 @@ local function setup_keymaps()
             lua_utils.newline_split(vim.fn.getreg("/"))
         )
     end)
-    vim_utils.add_key_trigger("n", "*", update_slash_register)
-    vim_utils.add_key_trigger("n", "#", update_slash_register)
-    vim_utils.add_key_trigger("v", "*", update_slash_register)
-    vim_utils.add_key_trigger("v", "#", update_slash_register)
+    local search_actions = { "*", "#", "g*", "g#", "gd", "gD" }
+    for _, key in ipairs(search_actions) do
+        vim_utils.add_key_trigger("n", key, update_slash_register)
+        vim_utils.add_key_trigger("v", key, update_slash_register)
+    end
 end
 
 setup_user_commands()
