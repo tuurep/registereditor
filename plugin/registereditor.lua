@@ -100,6 +100,21 @@ local function setup_autocommands()
             )
         end,
     })
+
+    -- update clipboard registers when vim gets focus
+    vim.api.nvim_create_autocmd({ "FocusGained" }, {
+        group = autocommand_group,
+        callback = function()
+            internals.update_register_buffers(
+                "+",
+                lua_utils.newline_split(vim.fn.getreg("+"))
+            )
+            internals.update_register_buffers(
+                "*",
+                lua_utils.newline_split(vim.fn.getreg("*"))
+            )
+        end,
+    })
 end
 
 local function setup_keymaps()
