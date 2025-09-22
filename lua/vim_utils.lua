@@ -1,3 +1,5 @@
+local lua_utils = require("lua_utils")
+
 local M = {}
 
 -- add a callback to a keypress without affecting existing keymaps
@@ -43,6 +45,10 @@ end
 
 M.close_buffer = function(buffer)
     vim.cmd("bd " .. buffer)
+end
+
+M.get_register_lines = function(register)
+    return lua_utils.newline_split(vim.fn.getreg(register))
 end
 
 return M

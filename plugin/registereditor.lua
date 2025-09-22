@@ -34,36 +34,21 @@ local function setup_autocommands()
             -- was specified for the yank, then we will be yanking into the "
             -- register
             local yank_register = event.regname == "" and '"' or event.regname
-            internals.update_register_buffers(
-                yank_register,
-                lua_utils.newline_split(vim.fn.getreg(yank_register))
-            )
+            internals.refresh_buffers_for_register(yank_register)
 
             -- update clipboard and selection registers
-            internals.update_register_buffers(
-                "+",
-                lua_utils.newline_split(vim.fn.getreg("+"))
-            )
-            internals.update_register_buffers(
-                "*",
-                lua_utils.newline_split(vim.fn.getreg("*"))
-            )
+            internals.refresh_buffers_for_register("+")
+            internals.refresh_buffers_for_register("*")
 
             -- update numbered registers
             for register_number = 1, 10 do
                 local register = tostring(register_number - 1)
-                internals.update_register_buffers(
-                    register,
-                    lua_utils.newline_split(vim.fn.getreg(register))
-                )
+                internals.refresh_buffers_for_register(register)
             end
 
             -- update the - register. There are many ways to trigger this
             -- update, but they all end up triggering the TextYankPost event
-            internals.update_register_buffers(
-                "-",
-                lua_utils.newline_split(vim.fn.getreg("-"))
-            )
+            internals.refresh_buffers_for_register("-")
         end,
     })
 
@@ -79,10 +64,7 @@ local function setup_autocommands()
     vim.api.nvim_create_autocmd({ "InsertLeave" }, {
         group = autocommand_group,
         callback = function()
-            internals.update_register_buffers(
-                ".",
-                lua_utils.newline_split(vim.fn.getreg("."))
-            )
+            internals.refresh_buffers_for_register(".")
         end,
     })
 
@@ -90,14 +72,8 @@ local function setup_autocommands()
     vim.api.nvim_create_autocmd({ "WinEnter", "BufEnter" }, {
         group = autocommand_group,
         callback = function()
-            internals.update_register_buffers(
-                "#",
-                lua_utils.newline_split(vim.fn.getreg("#"))
-            )
-            internals.update_register_buffers(
-                "%",
-                lua_utils.newline_split(vim.fn.getreg("%"))
-            )
+            internals.refresh_buffers_for_register("#")
+            internals.refresh_buffers_for_register("%")
         end,
     })
 
@@ -105,24 +81,15 @@ local function setup_autocommands()
     vim.api.nvim_create_autocmd({ "FocusGained" }, {
         group = autocommand_group,
         callback = function()
-            internals.update_register_buffers(
-                "+",
-                lua_utils.newline_split(vim.fn.getreg("+"))
-            )
-            internals.update_register_buffers(
-                "*",
-                lua_utils.newline_split(vim.fn.getreg("*"))
-            )
+            internals.refresh_buffers_for_register("+")
+            internals.refresh_buffers_for_register("*")
         end,
     })
 end
 
 local function setup_keymaps()
     local update_slash_register = vim.schedule_wrap(function()
-        internals.update_register_buffers(
-            "/",
-            lua_utils.newline_split(vim.fn.getreg("/"))
-        )
+        internals.refresh_buffers_for_register("/")
     end)
     local search_actions = { "*", "#", "g*", "g#", "gd", "gD" }
     for _, key in ipairs(search_actions) do

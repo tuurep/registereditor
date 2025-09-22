@@ -186,13 +186,18 @@ M.update_register_buffers = function(register, content)
     end)
 end
 
+M.refresh_buffers_for_register = function(register)
+    assert(check_string_is_register(register))
+    M.update_register_buffers(register, vim_utils.get_register_lines(register))
+end
+
 -- updates a buffer to match the contents of the underlying register
 local function refresh_register_buffer(buffer)
     -- find the register for this buffer
     local register = string.sub(vim.api.nvim_buf_get_name(buffer), -1, -1)
     assert(check_string_is_register(register))
     -- get the contents of the register
-    local content = lua_utils.newline_split(vim.fn.getreg(register))
+    local content = vim_utils.get_register_lines(register)
     -- update the buffer contents to match the register
     set_buffer_content(buffer, content)
 end
