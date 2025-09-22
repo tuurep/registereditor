@@ -29,12 +29,17 @@ local function setup_autocommands()
         group = autocommand_group,
         callback = function()
             local event = vim.api.nvim_get_vvar("event")
+
+            -- update the register that is being yanked into. If no register
+            -- was specified for the yank, then we will be yanking into the "
+            -- register
+            local yank_register = event.regname == "" and '"' or event.regname
             internals.update_register_buffers(
-                -- if no register was specified for the yank, then we will be
-                -- yanking into the " register
-                event.regname == "" and '"' or event.regname,
-                event.regcontents
+                yank_register,
+                lua_utils.newline_split(vim.fn.getreg(yank_register))
             )
+
+            -- update clipboard and selection registers
             internals.update_register_buffers(
                 "+",
                 lua_utils.newline_split(vim.fn.getreg("+"))
