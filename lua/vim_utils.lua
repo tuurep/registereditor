@@ -25,7 +25,11 @@ M.add_key_trigger = function(mode, key, callback, prepend)
             keymap.callback()
         else
             vim.schedule(function()
-                vim.cmd("normal! " .. keymap.rhs)
+                vim.cmd(
+                    'execute "normal! '
+                        .. vim.api.nvim_replace_termcodes(keymap.rhs, true, false, true)
+                        .. '"'
+                )
             end)
         end
     end
