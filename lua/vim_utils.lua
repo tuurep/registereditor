@@ -47,12 +47,12 @@ M.add_key_trigger = function(mode, key, callback, prepend)
     end, { remap = true })
 end
 
-M.close_buffer = function(buffer)
-    vim.cmd("bd " .. buffer)
+M.close_buffer = function(buf)
+    vim.cmd("bd " .. buf)
 end
 
-M.get_register_lines = function(register)
-    return lua_utils.newline_split(vim.fn.getreg(register))
+M.get_register_lines = function(reg)
+    return lua_utils.newline_split(vim.fn.getreg(reg))
 end
 
 return M
