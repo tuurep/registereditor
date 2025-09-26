@@ -188,7 +188,11 @@ end
 
 M.refresh_buffers_for_register = function(reg)
     assert(check_string_is_register(reg))
-    M.update_register_buffers(reg, vim_utils.get_register_lines(reg))
+
+    -- schedule wrap to avoid cursor flicker especially in TextYankPost events
+    vim.schedule_wrap(function()
+        M.update_register_buffers(reg, vim_utils.get_register_lines(reg))
+    end)
 end
 
 -- updates a buffer to match the contents of the underlying register
