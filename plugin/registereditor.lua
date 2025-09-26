@@ -30,25 +30,22 @@ local function setup_autocommands()
         callback = function()
             local event = vim.api.nvim_get_vvar("event")
 
-            -- update the register that is being yanked into. If no register
-            -- was specified for the yank, then we will be yanking into the "
-            -- register
-            local yank_register = event.regname == "" and '"' or event.regname
-            internals.refresh_buffers_for_register(yank_register)
+            -- explicitly specified register, like "ayw
+            local named_reg = event.regname
 
-            -- update clipboard and selection registers
-            internals.refresh_buffers_for_register("+")
-            internals.refresh_buffers_for_register("*")
+            -- all other registers that can update on a yank or deletion
+            local regs = vim.tbl_flatten({
+                { '"', "+", "*", "-" },
+                vim.tbl_map(tostring, vim.fn.range(0, 9)),
+            })
 
-            -- update numbered registers
-            for register_number = 1, 10 do
-                local register = tostring(register_number - 1)
-                internals.refresh_buffers_for_register(register)
+            if named_reg ~= "" then
+                table.insert(regs, 1, named_reg)
             end
 
-            -- update the - register. There are many ways to trigger this
-            -- update, but they all end up triggering the TextYankPost event
-            internals.refresh_buffers_for_register("-")
+            for _, reg in ipairs(regs) do
+                internals.refresh_buffers_for_register(reg)
+            end
         end,
     })
 
