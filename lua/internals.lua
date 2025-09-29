@@ -156,18 +156,6 @@ local function check_buffer_is_register_buffer(buf)
     return vim.api.nvim_get_option_value("filetype", { buf = buf }) == "registereditor"
 end
 
--- updates a given buffer with the given content if it matches the given
--- register
-local function update_register_buffer(buf, reg, content)
-    -- if the buffer is named @<register>, then it should be updated
-    if lua_utils.string_ends_with(vim.api.nvim_buf_get_name(buf), "@" .. reg) then
-        -- update the buffer with the register contents
-        vim.schedule(function()
-            set_buffer_content(buf, content)
-        end)
-    end
-end
-
 -- perform an action on all registereditor buffers
 local function loop_over_register_buffers(action)
     -- iterate over all buffers
@@ -179,39 +167,7 @@ local function loop_over_register_buffers(action)
     end
 end
 
--- update all open registereditor buffers
-M.update_register_buffers = function(reg, content)
-    loop_over_register_buffers(function(buf)
-        update_register_buffer(buf, reg, content)
-    end)
-end
-
-M.refresh_buffers_for_register = function(reg)
-    assert(check_string_is_register(reg))
-
-    -- schedule wrap to avoid cursor flicker especially in TextYankPost events
-    vim.schedule(function()
-        M.update_register_buffers(reg, vim_utils.get_register_lines(reg))
-    end)
-end
-
--- updates a buffer to match the contents of the underlying register
-local function refresh_register_buffer(buf)
-    -- find the register for this buffer
-    local reg = string.sub(vim.api.nvim_buf_get_name(buf), -1, -1)
-    assert(check_string_is_register(reg))
-    -- get the contents of the register
-    local content = vim_utils.get_register_lines(reg)
-    -- update the buffer contents to match the register
-    set_buffer_content(buf, content)
-end
-
-M.refresh_all_register_buffers = function()
-    loop_over_register_buffers(function(buf)
-        refresh_register_buffer(buf)
-    end)
-end
-
+-- gets the register name from the buffer
 local function get_register_from_buffer(buf)
     return string.sub(vim.api.nvim_buf_get_name(buf), -1, -1)
 end
@@ -235,6 +191,31 @@ local function close_windows(arg)
         if regs == nil or #regs == 0 or vim.tbl_contains(regs, reg) then
             vim_utils.close_buffer(buf)
         end
+    end)
+end
+
+-- loop over all open buffers and update them based on the register contents.
+-- The filter parameter allows for skipping some buffers. It can be a map from
+-- register name to `true`, or it can be `nil` to include all buffers.
+-- `content` is an optional parameter that supersedes getting the new register
+-- content via vim.fn.getreg()
+M.refresh_all_registereditor_buffers = function(filter, content)
+    loop_over_register_buffers(function(buf)
+        -- get register name
+        local reg = get_register_from_buffer(buf)
+
+        -- skip things that are filtered out
+        if filter ~= nil and filter[reg] == nil then
+            return
+        end
+
+        -- get register content
+        local content = vim_utils.get_register_lines(reg)
+
+        -- update the buffer with the register contents
+        vim.schedule(function()
+            set_buffer_content(buf, content)
+        end)
     end)
 end
 

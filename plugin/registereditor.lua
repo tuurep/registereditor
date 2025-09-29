@@ -17,8 +17,8 @@ local function setup_autocommands()
     vim.api.nvim_create_autocmd({ "RecordingLeave" }, {
         group = autocommand_group,
         callback = function()
-            internals.update_register_buffers(
-                vim.fn.reg_recording(),
+            internals.refresh_all_registereditor_buffers(
+                { [vim.fn.reg_recording()] = true },
                 lua_utils.newline_split(vim.api.nvim_get_vvar("event").regcontents)
             )
         end,
@@ -30,22 +30,25 @@ local function setup_autocommands()
         callback = function()
             local event = vim.api.nvim_get_vvar("event")
 
-            -- explicitly specified register, like "ayw
-            local named_reg = event.regname
-
             -- all other registers that can update on a yank or deletion
             local regs = vim.tbl_flatten({
                 { '"', "+", "*", "-" },
                 vim.tbl_map(tostring, vim.fn.range(0, 9)),
             })
 
-            if named_reg ~= "" then
-                table.insert(regs, 1, named_reg)
+            -- add explicitly specified register, like "ayw, if necessary
+            if event.regname ~= "" then
+                table.insert(regs, 1, event.regname)
             end
 
+            -- construct filter from list of regs
+            local filter = {}
             for _, reg in ipairs(regs) do
-                internals.refresh_buffers_for_register(reg)
+                filter[reg] = true
             end
+
+            -- update all buffers
+            internals.refresh_all_registereditor_buffers(filter)
         end,
     })
 
@@ -53,7 +56,7 @@ local function setup_autocommands()
     vim.api.nvim_create_autocmd({ "CmdlineLeave" }, {
         group = autocommand_group,
         callback = vim.schedule_wrap(function()
-            internals.refresh_all_register_buffers()
+            internals.refresh_all_registereditor_buffers()
         end),
     })
 
@@ -61,7 +64,7 @@ local function setup_autocommands()
     vim.api.nvim_create_autocmd({ "InsertLeave" }, {
         group = autocommand_group,
         callback = function()
-            internals.refresh_buffers_for_register(".")
+            internals.refresh_all_registereditor_buffers({ ["."] = true })
         end,
     })
 
@@ -69,8 +72,7 @@ local function setup_autocommands()
     vim.api.nvim_create_autocmd({ "WinEnter", "BufEnter" }, {
         group = autocommand_group,
         callback = function()
-            internals.refresh_buffers_for_register("#")
-            internals.refresh_buffers_for_register("%")
+            internals.refresh_all_registereditor_buffers({ ["#"] = true, ["%"] = true })
         end,
     })
 
@@ -78,15 +80,14 @@ local function setup_autocommands()
     vim.api.nvim_create_autocmd({ "FocusGained" }, {
         group = autocommand_group,
         callback = function()
-            internals.refresh_buffers_for_register("+")
-            internals.refresh_buffers_for_register("*")
+            internals.refresh_all_registereditor_buffers({ ["+"] = true, ["*"] = true })
         end,
     })
 end
 
 local function setup_keymaps()
     local update_slash_register = vim.schedule_wrap(function()
-        internals.refresh_buffers_for_register("/")
+        internals.refresh_all_registereditor_buffers({ ["/"] = true })
     end)
     local search_actions = { "*", "#", "g*", "g#", "gd", "gD" }
     for _, key in ipairs(search_actions) do
