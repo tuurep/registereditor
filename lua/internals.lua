@@ -196,25 +196,25 @@ end
 
 -- loop over all open buffers and update them based on the register contents.
 -- The filter parameter allows for skipping some buffers. It can be a map from
--- register name to `true`, or it can be `nil` to include all buffers.
--- `content` is an optional parameter that supersedes getting the new register
--- content via vim.fn.getreg()
+-- register name to `true`, or it can be `nil` to include all buffers. The
+-- `content` parameter is an optional parameter that supersedes getting the new
+-- register content via vim.fn.getreg()
 M.refresh_all_registereditor_buffers = function(filter, content)
     loop_over_register_buffers(function(buf)
         -- get register name
         local reg = get_register_from_buffer(buf)
 
-        -- skip things that are filtered out
+        -- skip buffers that are filtered out
         if filter ~= nil and filter[reg] == nil then
             return
         end
 
         -- get register content
-        local content = vim_utils.get_register_lines(reg)
+        local buffer_content = content or vim_utils.get_register_lines(reg)
 
         -- update the buffer with the register contents
         vim.schedule(function()
-            set_buffer_content(buf, content)
+            set_buffer_content(buf, buffer_content)
         end)
     end)
 end
