@@ -232,11 +232,7 @@ local function close_windows(arg)
         -- determine if the buffer should be closed based on the supplied
         -- list of registers. If the registers list is nil or empty, then
         -- always close the buffer
-        if
-            regs == nil
-            or #regs == 0
-            or vim.tbl_contains(regs, reg)
-        then
+        if regs == nil or #regs == 0 or vim.tbl_contains(regs, reg) then
             vim_utils.close_buffer(buf)
         end
     end)
