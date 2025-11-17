@@ -1,5 +1,5 @@
-local lua_utils = require("lua_utils")
-local vim_utils = require("vim_utils")
+local lua_utils = require("lua-utils")
+local vim_utils = require("vim-utils")
 
 local M = {}
 

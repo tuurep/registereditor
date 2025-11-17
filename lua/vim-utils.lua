@@ -1,4 +1,4 @@
-local lua_utils = require("lua_utils")
+local lua_utils = require("lua-utils")
 
 local M = {}
 

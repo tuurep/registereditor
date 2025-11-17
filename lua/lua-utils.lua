@@ -2,19 +2,14 @@ local M = {}
 
 -- https://stackoverflow.com/questions/72386387/lua-split-string-to-table
 -- Split string into table on newlines, include empty lines (\n\n\n)
-function string:split(separator)
-    local separator = separator or "\n"
+M.newline_split = function(str)
     local result = {}
     local i = 1
-    for c in (self .. separator):gmatch("(.-)" .. separator) do
+    for c in (str .. "\n"):gmatch("(.-)" .. "\n") do
         result[i] = c
         i = i + 1
     end
     return result
-end
-
-M.newline_split = function(value)
-    return value:split("\n")
 end
 
 -- https://gist.github.com/kgriffs/124aae3ac80eefe57199451b823c24ec

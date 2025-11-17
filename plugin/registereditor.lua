@@ -1,6 +1,6 @@
 local internals = require("internals")
-local lua_utils = require("lua_utils")
-local vim_utils = require("vim_utils")
+local lua_utils = require("lua-utils")
+local vim_utils = require("vim-utils")
 
 local function setup_user_commands()
     vim.api.nvim_create_user_command("RegisterEditor", function(opts)
