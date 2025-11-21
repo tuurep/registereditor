@@ -58,6 +58,12 @@ local function expect_buffer_matches_register(reg)
     local actual_reg = newline_split(child.fn.getreg(reg))
     MiniTest.expect.equality(get_buffer_contents(reg), actual_reg)
 end
+
+local function expect_buffer_does_not_match_register(reg)
+    local actual_reg = newline_split(child.fn.getreg(reg))
+    MiniTest.expect.no_equality(get_buffer_contents(reg), actual_reg)
+end
+
 local function expect_buffer_empty(reg)
     MiniTest.expect.equality(get_buffer_contents(reg), { "" })
 end
@@ -415,7 +421,6 @@ T["%#"]["Switch between files"] = function()
 
     child.cmd("RegisterEditor %") -- Current buffer filename
 
-    MiniTest.add_note("Todo: make an exception for @% that it can be refreshed when you're in it (possibly for all readonly regs?)")
     expect_buffer_matches_register("%")
 
     -- The rest of this stuff works
@@ -437,7 +442,6 @@ T[":"] = MiniTest.new_set()
 T[":"]["Run ex commands"] = function()
     child.cmd("RegisterEditor :")
 
-    MiniTest.add_note("This actually does refresh while in 'self', maybe because technically you're on cmdline?")
     child.type_keys(":echo 'foobar'<cr>")
     expect_buffer_matches_register(":")
 
@@ -631,6 +635,39 @@ T["/"]["Choose a search string in cmdwin"] = function()
 
     child.type_keys("/<C-f>gg<cr>")
     expect_buffer_matches_register("/")
+end
+
+T["Do not refresh buffer currently in focus (unless readonly)"] = function()
+    child.type_keys('"ayj') -- Copy 2 lines to reg a
+    child.type_keys("yj") -- Copy 2 lines to reg "
+    child.cmd('RegisterEditor "')
+
+    child.type_keys("dw")
+    expect_buffer_does_not_match_register('"')
+
+    child.type_keys("yw")
+    expect_buffer_does_not_match_register('"')
+
+    -- Explicit "
+    child.type_keys('""dw')
+    expect_buffer_does_not_match_register('"')
+
+    child.type_keys('""yw')
+    expect_buffer_does_not_match_register('"')
+
+    child.cmd('RegisterEditor a')
+
+    child.type_keys('"adw')
+    expect_buffer_does_not_match_register("a")
+
+    child.type_keys('"ayw')
+    expect_buffer_does_not_match_register("a")
+
+    child.type_keys("qaiFoo<Esc>q")
+    expect_buffer_does_not_match_register("a")
+
+    child.cmd("let @a='Bar'") -- Note: doesn't move to cmdline
+    expect_buffer_does_not_match_register("a")
 end
 
 -- Note: there's more stuff in :h search-commands, not sure how meaningful
