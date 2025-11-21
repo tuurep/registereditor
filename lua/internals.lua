@@ -17,11 +17,27 @@ local function set_register(reg)
         vim.fn.setreg(reg, buf_lines)
     end
 
+    local is_append_reg = reg:match("[A-Z]")
+    local is_blackhole_reg = reg == "_"
+
+    -- HACKS ahead: this will all be redesigned in
+    -- https://github.com/tuurep/registereditor/issues/19
+
     -- Saving a buffer with a newline at the end puts ^J at the end of register
     -- If last line is text, ^J is omitted: for macros or something like "qy$
-    if last_line ~= "" then
+    if not is_append_reg and last_line ~= "" then
         vim.cmd("let @" .. reg .. " ..= '" .. last_line .. "'")
+    else
+        vim.cmd("let @" .. reg .. " = '" .. last_line .. "'")
+        M.refresh_all_registereditor_buffers({ [reg:lower()] = true })
     end
+
+    -- Registers that should wipe their own buffers on save
+    if is_append_reg or is_blackhole_reg then
+        vim.api.nvim_buf_set_lines(0, 0, -1, false, {})
+    end
+
+    vim.bo.modified = false
 end
 
 -- set the contents of a buffer and mark it is not modified
@@ -111,7 +127,6 @@ local function open_editor_window(reg)
     vim.api.nvim_create_autocmd({ "BufWriteCmd" }, {
         buffer = 0,
         callback = function()
-            vim.bo.modified = false
             set_register(reg)
         end,
     })
@@ -203,6 +218,11 @@ M.refresh_all_registereditor_buffers = function(filter, content)
     loop_over_register_buffers(function(buf)
         -- get register name
         local reg = get_register_from_buffer(buf)
+
+        -- don't refresh append registers (A-Z), only their lowercase counterparts
+        if reg:match("[A-Z]") then
+            return
+        end
 
         -- skip buffers that are filtered out
         if filter ~= nil and filter[reg] == nil then

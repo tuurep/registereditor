@@ -17,9 +17,19 @@ local function setup_autocommands()
     vim.api.nvim_create_autocmd({ "RecordingLeave" }, {
         group = autocommand_group,
         callback = function()
+            local contents = vim.api.nvim_get_vvar("event").regcontents
+            local reg = vim.fn.reg_recording()
+
+            -- If it's A-Z, what we want to update is the lowercase reg by appending to it
+            -- The uppercase reg buffer should always be empty unless directly editing it
+            if reg:match("[A-Z]") then
+                reg = reg:lower()
+                contents = vim.fn.getreg(reg) .. contents
+            end
+
             internals.refresh_all_registereditor_buffers(
-                { [vim.fn.reg_recording()] = true },
-                lua_utils.newline_split(vim.api.nvim_get_vvar("event").regcontents)
+                { [reg] = true },
+                lua_utils.newline_split(contents)
             )
         end,
     })
@@ -38,7 +48,7 @@ local function setup_autocommands()
 
             -- add explicitly specified register, like "ayw, if necessary
             if event.regname ~= "" then
-                table.insert(regs, 1, event.regname)
+                table.insert(regs, 1, event.regname:lower())
             end
 
             -- construct filter from list of regs

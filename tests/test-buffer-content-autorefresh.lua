@@ -55,8 +55,11 @@ local function get_buffer_contents(reg)
 end
 
 local function expect_buffer_matches_register(reg)
-    actual_reg = newline_split(child.fn.getreg(reg))
+    local actual_reg = newline_split(child.fn.getreg(reg))
     MiniTest.expect.equality(get_buffer_contents(reg), actual_reg)
+end
+local function expect_buffer_empty(reg)
+    MiniTest.expect.equality(get_buffer_contents(reg), { "" })
 end
 
 local function return_to_main_buffer()
@@ -106,14 +109,23 @@ end
 
 T["A-Z"] = MiniTest.new_set()
 
--- TODO: Investigate how an uppercase reg registereditor buffer should update (if at all).
---       If I recall, we open it as empty because otherwise we'll duplicate the lowercase
---       one's contents on save.
---       I have a hunch that we should always have uppercase reg buffer empty, unless when
---       directly editing it.
---       Add tests for that, once confirmed.
+T["A-Z"]["Generic (stay empty)"] = function()
+    child.cmd("RegisterEditor a")
+    child.type_keys("ifoobar<Esc>:w<cr>")
+    child.cmd("RegisterEditor A")
+    return_to_main_buffer()
 
-T["A-Z"]["Record macro"] = function()
+    child.type_keys("qAciwFoo<Esc>q")
+    expect_buffer_empty("A")
+
+    child.type_keys('"Ayw')
+    expect_buffer_empty("A")
+
+    child.type_keys(":let @A='baz'<cr>")
+    expect_buffer_empty("A")
+end
+
+T["A-Z"]["Append recorded macro to a"] = function()
     child.cmd("RegisterEditor a")
     child.type_keys("ifoobar<Esc>:w<cr>")
     return_to_main_buffer()
@@ -124,10 +136,9 @@ T["A-Z"]["Record macro"] = function()
     -- Record macro to uppercase reg: should be appended to @a
     child.type_keys("qAyy5pq")
 
-    MiniTest.add_note("Fails: append registers are exceptional in that they additionally want to refresh another register")
     expect_buffer_matches_register("a")
 end
-T["A-Z"]["Explicit yank"] = function()
+T["A-Z"]["Append explicit yank to a"] = function()
     child.cmd("RegisterEditor a")
     child.type_keys("ifoobar<Esc>:w<cr>")
     return_to_main_buffer()
@@ -135,18 +146,46 @@ T["A-Z"]["Explicit yank"] = function()
     child.type_keys('"ayw')
     child.type_keys('w"Ayw')
 
-    MiniTest.add_note("Fails: append registers are exceptional in that they additionally want to refresh another register")
     expect_buffer_matches_register("a")
 end
-T["A-Z"]["Set contents on cmdline"] = function()
+T["A-Z"]["Append cmdline set to a"] = function()
     child.cmd("RegisterEditor a")
     child.type_keys("ifoobar<Esc>:w<cr>")
     return_to_main_buffer()
 
     child.type_keys(":let @A='baz'<cr>")
 
-    MiniTest.add_note("This one succeeds because CmdlineLeave hits lowercase reg")
     expect_buffer_matches_register("a")
+end
+T["A-Z"]["Append to a and wipe A on :w"] = function()
+    child.cmd("RegisterEditor a")
+    child.type_keys("ifoobar<Esc>:w<cr>")
+    child.cmd("RegisterEditor A")
+
+    local text = " text to append to reg a"
+    local appended_contents = newline_split(child.fn.getreg("a") .. text)
+
+    child.type_keys("i" .. text .. "<Esc>")
+    child.type_keys(":w<cr>")
+
+    MiniTest.expect.equality(get_buffer_contents("a"), appended_contents)
+    expect_buffer_empty("A")
+end
+T["A-Z"]["Append to a and wipe A on a custom save map"] = function()
+    child.api.nvim_set_keymap("n", "<C-s>", "<cmd>w<cr>", {})
+
+    child.cmd("RegisterEditor a")
+    child.type_keys("ifoobar<Esc>:w<cr>")
+    child.cmd("RegisterEditor A")
+
+    local text = " text to append to reg a"
+    local appended_contents = newline_split(child.fn.getreg("a") .. text)
+
+    child.type_keys("i" .. text .. "<Esc>")
+    child.type_keys("<C-s>")
+
+    MiniTest.expect.equality(get_buffer_contents("a"), appended_contents)
+    expect_buffer_empty("A")
 end
 
 T['"'] = MiniTest.new_set()
@@ -485,7 +524,7 @@ T["_"]["Generic"] = function()
     expect_explicit_yank_works("_") -- We check that it's empty like the real reg
     expect_cmdline_set_works("_")
 end
-T["_"]["Special :write quirk"] = function()
+T["_"]["Wipe contents on :w"] = function()
     -- Funny but deliberate behavior: wipe the buffer to match the real blackhole reg
     child.cmd("RegisterEditor _")
 
@@ -494,14 +533,13 @@ T["_"]["Special :write quirk"] = function()
 
     expect_buffer_matches_register("_")
 end
-T["_"]["Special :write quirk with a custom save map"] = function()
+T["_"]["Wipe contents on a custom save map"] = function()
     -- TODO: I noticed that with a mapping I have, @_ buffer doesn't wipe on save
     -- Note: with mini.test, child.keymap.set could not be used
     child.api.nvim_set_keymap("n", "<C-s>", "<cmd>w<cr>", {})
 
     child.cmd("RegisterEditor _")
 
-    MiniTest.add_note("Maybe this should refresh on some of the Write Events?")
     child.type_keys("iHold up can I write here?<Esc>")
     child.type_keys("<C-s>")
 
