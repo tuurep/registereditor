@@ -95,4 +95,91 @@ T["Visual gd and gD"] = function()
     expect_unmapped_behavior_match("jviwgD")
 end
 
+T["Irrelevant custom map exists"] = function()
+    child.api.nvim_set_keymap("n", "*", "3Wl", {})
+
+    child.type_keys("*")
+
+    local ref_behavior = {
+        line = child.fn.line("."),
+        col = child.fn.col("."),
+        search_string = child.fn.getreg("/")
+    }
+
+    restart()
+
+    child.api.nvim_set_keymap("n", "*", "3Wl", {})
+
+    load_plugin() -- Plugin wraps keys: *, #, g*, g#, gd, gD
+
+    child.type_keys("*")
+
+    local behavior = {
+        line = child.fn.line("."),
+        col = child.fn.col("."),
+        search_string = child.fn.getreg("/")
+    }
+
+    MiniTest.expect.equality(behavior, ref_behavior)
+end
+
+T["Using common * remap: *zz"] = function()
+    child.api.nvim_set_keymap("n", "*", "*zz", {})
+
+    child.type_keys("*")
+
+    local ref_behavior = {
+        line = child.fn.line("."),
+        col = child.fn.col("."),
+        search_string = child.fn.getreg("/")
+    }
+
+    restart()
+
+    child.api.nvim_set_keymap("n", "*", "*zz", {})
+
+    load_plugin() -- Plugin wraps keys: *, #, g*, g#, gd, gD
+
+    child.type_keys("*")
+
+    local behavior = {
+        line = child.fn.line("."),
+        col = child.fn.col("."),
+        search_string = child.fn.getreg("/")
+    }
+
+    MiniTest.expect.equality(behavior, ref_behavior)
+end
+
+T["Something else mapped to plain *"] = function()
+    child.api.nvim_set_keymap("n", "g/", "*", {})
+
+    child.type_keys("g/")
+
+    local ref_behavior = {
+        line = child.fn.line("."),
+        col = child.fn.col("."),
+        search_string = child.fn.getreg("/")
+    }
+
+    restart()
+
+    child.api.nvim_set_keymap("n", "g/", "*", {})
+
+    load_plugin() -- Plugin wraps keys: *, #, g*, g#, gd, gD
+
+    child.type_keys("g/")
+
+    local behavior = {
+        line = child.fn.line("."),
+        col = child.fn.col("."),
+        search_string = child.fn.getreg("/")
+    }
+
+    MiniTest.expect.equality(behavior, ref_behavior)
+end
+
+-- Todo: Don't know how to test a mapping with rhs as a lua function,
+-- since child.keymap.set can't be used
+
 return T
