@@ -199,6 +199,7 @@ T['"'] = MiniTest.new_set()
 -- Surprising: a macro *can* be recorded to the " register
 T['"']["Generic"] = function()
     MiniTest.add_note("Problem with weird symptoms: reg updates self in the macro with 'ciw'")
+    MiniTest.add_note("Works when manually doing this")
     expect_macro_recording_works('"')
     expect_explicit_yank_works('"')
     expect_cmdline_set_works('"')
@@ -419,16 +420,19 @@ T["%#"]["Switch between files"] = function()
     child.cmd("RegisterEditor #") -- Last buffer filename
     expect_buffer_matches_register("#")
 
+    MiniTest.add_note("Test passes if changed to `child.type_keys(':RegisterEditor %<cr>')`")
     child.cmd("RegisterEditor %") -- Current buffer filename
 
     expect_buffer_matches_register("%")
 
-    -- The rest of this stuff works
     return_to_main_buffer()
     expect_buffer_matches_register("#")
     expect_buffer_matches_register("%")
 
-    vim.cmd("edit foobar.lua")
+    -- Todo: return_to_main_buffer only works if main buffer is top left -most
+    -- Find a way to make it go to the "oldest" window instead
+    vim.cmd("below split foobar.lua")
+
     expect_buffer_matches_register("#")
     expect_buffer_matches_register("%")
 
