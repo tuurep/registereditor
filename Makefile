@@ -1,7 +1,7 @@
 # Run all test files, or a single test file in FILE, if given.
 #
 # FILE arg example:
-# 	make test FILE=test-add-key-trigger.lua
+# 	make test FILE=test-buffer-content-autorefresh.lua
 #
 # Note: since this is the first target, just `make` runs all tests too.
 

@@ -1,6 +1,5 @@
 local internals = require("internals")
 local lua_utils = require("lua-utils")
-local vim_utils = require("vim-utils")
 
 local function setup_user_commands()
     vim.api.nvim_create_user_command("RegisterEditor", function(opts)
@@ -95,17 +94,5 @@ local function setup_autocommands()
     })
 end
 
-local function setup_keymaps()
-    local update_slash_register = vim.schedule_wrap(function()
-        internals.refresh_all_registereditor_buffers({ ["/"] = true })
-    end)
-    local search_actions = { "*", "#", "g*", "g#", "gd", "gD" }
-    for _, key in ipairs(search_actions) do
-        vim_utils.add_key_trigger("n", key, update_slash_register)
-        vim_utils.add_key_trigger("v", key, update_slash_register)
-    end
-end
-
 setup_user_commands()
 setup_autocommands()
-setup_keymaps()

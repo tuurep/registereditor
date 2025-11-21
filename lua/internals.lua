@@ -1,5 +1,4 @@
 local lua_utils = require("lua-utils")
-local vim_utils = require("vim-utils")
 
 local M = {}
 
@@ -204,7 +203,7 @@ local function close_windows(arg)
         -- list of registers. If the registers list is nil or empty, then
         -- always close the buffer
         if regs == nil or #regs == 0 or vim.tbl_contains(regs, reg) then
-            vim_utils.close_buffer(buf)
+            vim.cmd("bd " .. buf)
         end
     end)
 end
@@ -230,7 +229,7 @@ M.refresh_all_registereditor_buffers = function(filter, content)
         end
 
         -- get register content
-        local buffer_content = content or vim_utils.get_register_lines(reg)
+        local buffer_content = content or lua_utils.newline_split(vim.fn.getreg(reg))
 
         -- update the buffer with the register contents
         vim.schedule(function()

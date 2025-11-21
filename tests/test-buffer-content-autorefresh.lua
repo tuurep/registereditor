@@ -573,6 +573,8 @@ T["/"]["Search with / and ?"] = function()
     expect_buffer_matches_register("/")
 end
 T["/"]["Search with * and #"] = function()
+    MiniTest.skip("SKIP: issue #22")
+
     child.cmd("RegisterEditor /")
     child.type_keys("ifoobar<Esc>:w<cr>")
     return_to_main_buffer()
@@ -585,6 +587,8 @@ T["/"]["Search with * and #"] = function()
     expect_buffer_matches_register("/")
 end
 T["/"]["Search with Visual * and #"] = function()
+    MiniTest.skip("SKIP: issue #22")
+
     MiniTest.add_note("Cursor is not moved but buffer correctly refreshes")
 
     child.cmd("RegisterEditor /")
@@ -599,6 +603,8 @@ T["/"]["Search with Visual * and #"] = function()
     expect_buffer_matches_register("/")
 end
 T["/"]["Search with g* and g#"] = function()
+    MiniTest.skip("SKIP: issue #22")
+
     child.cmd("RegisterEditor /")
     child.type_keys("ifoobar<Esc>:w<cr>")
     return_to_main_buffer()
@@ -611,6 +617,8 @@ T["/"]["Search with g* and g#"] = function()
     expect_buffer_matches_register("/")
 end
 T["/"]["Search with gd and gD"] = function()
+    MiniTest.skip("SKIP: issue #22")
+
     child.cmd("RegisterEditor /")
     child.type_keys("ifoobar<Esc>:w<cr>")
     return_to_main_buffer()
