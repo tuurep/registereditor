@@ -1,6 +1,3 @@
--- Add plugin to runtimepath for testing
-vim.cmd([[let &rtp.=','.getcwd()]])
-
 -- Set up 'mini.test' only when calling headless Neovim (like with `make test`)
 if #vim.api.nvim_list_uis() == 0 then
     vim.cmd('set rtp+=tests/mini.test')

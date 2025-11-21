@@ -6,6 +6,10 @@ local child = MiniTest.new_child_neovim()
 local function restart()
     child.restart({ "-u", "tests/minimal-config/init.lua" })
 
+    -- Load plugin
+    child.o.rtp = child.o.rtp .. "," .. vim.fn.getcwd()
+    child.cmd("runtime plugin/registereditor.lua")
+
     -- "Main buffer" is prepopulated with this for each test
     child.api.nvim_buf_set_lines(0, 0, -1, true, {
         "Lorem ipsum dolor sit amet,",
@@ -31,6 +35,7 @@ local T = MiniTest.new_set({
 -- Helpers
 -- =======
 
+vim.o.rtp = vim.o.rtp .. "," .. vim.fn.getcwd()
 newline_split = require("lua-utils").newline_split
 
 local function get_register_from_buffer(buf)
@@ -591,7 +596,5 @@ T["/"]["Choose a search string in cmdwin"] = function()
 end
 
 -- Note: there's more stuff in :h search-commands, not sure how meaningful
-
--- TODO: test the * and # mapping mechanism in its own testfile
 
 return T
