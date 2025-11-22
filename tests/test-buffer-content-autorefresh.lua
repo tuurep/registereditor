@@ -109,7 +109,9 @@ T["a-z"] = MiniTest.new_set()
 
 T["a-z"]["Generic"] = function()
     expect_macro_recording_works("a")
+    restart()
     expect_explicit_yank_works("a")
+    restart()
     expect_cmdline_set_works("a")
 end
 
@@ -198,10 +200,13 @@ T['"'] = MiniTest.new_set()
 
 -- Surprising: a macro *can* be recorded to the " register
 T['"']["Generic"] = function()
-    MiniTest.add_note("Problem with weird symptoms: reg updates self in the macro with 'ciw'")
-    MiniTest.add_note("Works when manually doing this")
+    MiniTest.add_note("\n\n  Reg updates self in the macro with 'ciw', doesn't refresh on macro end.\n"
+                   .. '  Works when manually doing this. Only a problem for the " reg.\n'
+                   .. "  Would work with no delete/yank in macro.")
     expect_macro_recording_works('"')
+    restart()
     expect_explicit_yank_works('"')
+    restart()
     expect_cmdline_set_works('"')
 end
 T['"']['clipboard="" (default)'] = function()
@@ -227,6 +232,7 @@ T["*"] = MiniTest.new_set()
 T["*"]["Generic"] = function()
     -- Cannot record macro
     expect_explicit_yank_works("*")
+    restart()
     expect_cmdline_set_works("*")
 end
 T["*"]['clipboard="unnamed"'] = MiniTest.new_set({
@@ -267,6 +273,7 @@ T["+"] = MiniTest.new_set()
 T["+"]["Generic"] = function()
     -- Cannot record macro
     expect_explicit_yank_works("+")
+    restart()
     expect_cmdline_set_works("+")
 end
 T["+"]['clipboard="unnamedplus"'] = MiniTest.new_set({
@@ -354,6 +361,7 @@ T["-"] = MiniTest.new_set()
 T["-"]["Generic"] = function()
     -- Cannot record macro
     expect_explicit_yank_works("-")
+    restart()
     expect_cmdline_set_works("-")
 end
 T["-"]["Small deletes"] = function()
@@ -375,7 +383,9 @@ T["0"] = MiniTest.new_set()
 
 T["0"]["Generic"] = function()
     expect_macro_recording_works("0") -- *Can* record macro (strange)
+    restart()
     expect_explicit_yank_works("0")
+    restart()
     expect_cmdline_set_works("0")
 end
 T["0"]["Yank"] = function()
@@ -396,9 +406,11 @@ T["1-9"]["Generic"] = function()
     for i=1, 9 do
         local reg = tostring(i)
         expect_macro_recording_works(reg) -- *Can* record macro (strange)
+        restart()
         expect_explicit_yank_works(reg)
+        restart()
         expect_cmdline_set_works(reg)
-        restart() -- Will run out of window space otherwise...
+        restart()
     end
 end
 T["1-9"]["Multiline-delete history"] = function()
@@ -542,8 +554,6 @@ T["_"]["Wipe contents on :w"] = function()
     expect_buffer_matches_register("_")
 end
 T["_"]["Wipe contents on a custom save map"] = function()
-    -- TODO: I noticed that with a mapping I have, @_ buffer doesn't wipe on save
-    -- Note: with mini.test, child.keymap.set could not be used
     child.api.nvim_set_keymap("n", "<C-s>", "<cmd>w<cr>", {})
 
     child.cmd("RegisterEditor _")
@@ -681,7 +691,5 @@ T["Do not refresh buffer currently in focus (unless readonly)"] = function()
     child.cmd("let @a='Bar'") -- Note: doesn't move to cmdline
     expect_buffer_does_not_match_register("a")
 end
-
--- Note: there's more stuff in :h search-commands, not sure how meaningful
 
 return T
