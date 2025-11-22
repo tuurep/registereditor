@@ -131,20 +131,20 @@ local function open_editor_window(reg)
     })
 end
 
-local function check_string_is_register(value)
-    return value:len() == 1 and value:match('["0-9a-zA-Z-*+.:%%#/=_]')
+local function is_regname(str)
+    return str:len() == 1 and str:match('["0-9a-zA-Z-*+.:%%#/=_]')
 end
 
 -- parse a list of single-character registers from a string argument. For
 -- example, if the argument is "a b c" then the list should be {"a", "b", "c"}
 local function parse_register_list(arg)
     local regs = {}
-    for reg in arg:gmatch("[^%s]+") do
-        if not check_string_is_register(reg) then
-            print("Not a register: @" .. reg)
+    for str in arg:gmatch("[^%s]+") do
+        if not is_regname(str) then
+            print("Not a register: @" .. str)
             return
         end
-        table.insert(regs, reg)
+        table.insert(regs, str)
     end
     return regs
 end
@@ -166,7 +166,7 @@ local function open_all_windows(arg)
 end
 
 -- tells whether or not a buffer belongs to this plugin
-local function check_buffer_is_register_buffer(buf)
+local function is_register_buffer(buf)
     return vim.api.nvim_get_option_value("filetype", { buf = buf }) == "registereditor"
 end
 
@@ -175,7 +175,7 @@ local function loop_over_register_buffers(action)
     -- iterate over all buffers
     for _, buf in pairs(vim.api.nvim_list_bufs()) do
         -- ensure the buffer has the 'registereditor' filetype
-        if check_buffer_is_register_buffer(buf) then
+        if is_register_buffer(buf) then
             action(buf)
         end
     end
@@ -214,6 +214,14 @@ end
 -- `content` parameter is an optional parameter that supersedes getting the new
 -- register content via vim.fn.getreg()
 M.refresh_all_registereditor_buffers = function(filter, content)
+    -- don't refresh a buffer if it's currently in focus
+    -- prevents for example `diw` on the " register overwriting itself with the edit
+    if filter ~= nil then
+        if is_register_buffer(0) and not vim.bo.readonly then
+            filter[get_register_from_buffer(0)] = nil
+        end
+    end
+
     loop_over_register_buffers(function(buf)
         -- get register name
         local reg = get_register_from_buffer(buf)
