@@ -7,9 +7,20 @@ local M = {}
 local MAX_BUFFER_LINES = 20
 
 local function set_register(reg)
-    vim.fn.setreg(reg, "")
+    -- HACKS ahead: this will all be redesigned in
+    -- https://github.com/tuurep/registereditor/issues/19
 
     local buf_lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+
+    -- Registers that need to update self buffer immediately after write
+    if (reg == "#" or reg == "=") then
+        vim.fn.setreg(reg, buf_lines[1])
+        M.refresh_all_registereditor_buffers({ [reg] = true })
+        return
+    end
+
+    vim.fn.setreg(reg, "")
+
     local last_line = table.remove(buf_lines)
 
     if #buf_lines > 0 then
@@ -18,9 +29,6 @@ local function set_register(reg)
 
     local is_append_reg = reg:match("[A-Z]")
     local is_blackhole_reg = reg == "_"
-
-    -- HACKS ahead: this will all be redesigned in
-    -- https://github.com/tuurep/registereditor/issues/19
 
     -- Saving a buffer with a newline at the end puts ^J at the end of register
     -- If last line is text, ^J is omitted: for macros or something like "qy$
@@ -126,8 +134,8 @@ local function open_editor_window(reg)
     vim.bo.swapfile = false
     vim.bo.buflisted = false
 
-    -- Special readonly registers
-    local readonly = reg:match("[.:%%#]")
+    -- Special readonly regists
+    local readonly = reg:match("[.:%%]") -- Three regs: . : %
     if readonly then
         vim.bo.readonly = true
         vim.bo.modifiable = false
@@ -234,7 +242,10 @@ M.refresh_all_registereditor_buffers = function(filter, content)
     -- prevents for example `diw` on the " register overwriting itself with the edit
     if filter ~= nil then
         if is_register_buffer(0) and not vim.bo.readonly then
-            filter[get_register_from_buffer(0)] = nil
+            local reg = get_register_from_buffer(0)
+            if reg ~= "#" and reg ~= "=" then
+                filter[reg] = nil
+            end
         end
     end
 
@@ -255,7 +266,7 @@ M.refresh_all_registereditor_buffers = function(filter, content)
         -- get register content
         local buffer_content = content or lua_utils.newline_split(vim.fn.getreg(reg))
 
-        local readonly = reg:match("[.:%%#]")
+        local readonly = reg:match("[.:%%]")
 
         -- update the buffer with the register contents
         vim.schedule(function()

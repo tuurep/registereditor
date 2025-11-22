@@ -230,7 +230,7 @@ end
 T["*"] = MiniTest.new_set()
 
 T["*"]["Generic"] = function()
-    -- Cannot record macro
+    -- Can't record macro
     expect_explicit_yank_works("*")
     restart()
     expect_cmdline_set_works("*")
@@ -271,7 +271,7 @@ end
 T["+"] = MiniTest.new_set()
 
 T["+"]["Generic"] = function()
-    -- Cannot record macro
+    -- Can't record macro
     expect_explicit_yank_works("+")
     restart()
     expect_cmdline_set_works("+")
@@ -359,7 +359,7 @@ end
 T["-"] = MiniTest.new_set()
 
 T["-"]["Generic"] = function()
-    -- Cannot record macro
+    -- Can't record macro
     expect_explicit_yank_works("-")
     restart()
     expect_cmdline_set_works("-")
@@ -382,7 +382,7 @@ end
 T["0"] = MiniTest.new_set()
 
 T["0"]["Generic"] = function()
-    expect_macro_recording_works("0") -- *Can* record macro (strange)
+    expect_macro_recording_works("0")
     restart()
     expect_explicit_yank_works("0")
     restart()
@@ -405,7 +405,7 @@ T["1-9"] = MiniTest.new_set()
 T["1-9"]["Generic"] = function()
     for i=1, 9 do
         local reg = tostring(i)
-        expect_macro_recording_works(reg) -- *Can* record macro (strange)
+        expect_macro_recording_works(reg)
         restart()
         expect_explicit_yank_works(reg)
         restart()
@@ -426,29 +426,124 @@ T["1-9"]["Multiline-delete history"] = function()
     end
 end
 
-T["%#"] = MiniTest.new_set()
+T["%"] = MiniTest.new_set()
 
-T["%#"]["Switch between files"] = function()
-    child.cmd("RegisterEditor #") -- Last buffer filename
-    expect_buffer_matches_register("#")
-
+T["%"]["Switch between files"] = function()
     child.cmd("RegisterEditor %") -- Current buffer filename
     expect_buffer_matches_register("%")
 
     return_to_main_buffer()
-    expect_buffer_matches_register("#")
     expect_buffer_matches_register("%")
 
     -- Todo: return_to_main_buffer only works if main buffer is top left -most
     -- Find a way to make it go to the "oldest" window instead
-    vim.cmd("below split foobar.lua")
+    child.cmd("rightbelow split foobar.lua")
+    expect_buffer_matches_register("%")
 
-    expect_buffer_matches_register("#")
+    child.cmd("rightbelow vsplit bazqux.nim")
     expect_buffer_matches_register("%")
 
     return_to_main_buffer()
-    expect_buffer_matches_register("#")
     expect_buffer_matches_register("%")
+end
+
+T["#"] = MiniTest.new_set()
+
+T["#"]["Switch between files"] = function()
+    child.cmd("RegisterEditor #")
+    expect_buffer_matches_register("#")
+
+    return_to_main_buffer()
+    expect_buffer_matches_register("#")
+
+    child.cmd("rightbelow split foobar.lua")
+    expect_buffer_matches_register("#")
+
+    child.cmd("rightbelow vsplit bazqux.nim")
+    expect_buffer_matches_register("#")
+
+    return_to_main_buffer()
+    expect_buffer_matches_register("#")
+end
+T["#"]["Set alternate file on cmdline"] = function()
+    -- Can't set just any string to @#, it has to be an existing buffer name or id number
+
+    child.cmd("RegisterEditor #")
+    return_to_main_buffer()
+
+    child.cmd("rightbelow split foobar.lua")
+    child.cmd("rightbelow vsplit bazqux.nim")
+    return_to_main_buffer()
+
+    child.type_keys(":let @#='foobar.lua'<cr>")
+    expect_buffer_matches_register("#")
+
+    child.type_keys(":let @#='bazqux.nim'<cr>")
+    expect_buffer_matches_register("#")
+
+    child.type_keys(":let @#=0<cr>")
+    expect_buffer_matches_register("#")
+
+    child.type_keys(":let @#=1<cr>")
+    expect_buffer_matches_register("#")
+
+    child.type_keys(":let @#=2<cr>")
+    expect_buffer_matches_register("#")
+
+    child.type_keys(":let @#=3<cr>")
+    expect_buffer_matches_register("#")
+end
+T["#"]["Expand full buffername on :w"] = function()
+    -- The @# can be written to if content matches a substring of an existing buffer,
+    -- or is a number matching an existing buffer id
+    -- In both cases refresh the contents with the full buffername
+
+    child.cmd("rightbelow split foobar.lua")
+    child.cmd("rightbelow vsplit bazqux.nim")
+    child.cmd("rightbelow vsplit Makefile")
+    child.cmd("rightbelow vsplit .gitignore")
+
+    child.cmd("RegisterEditor #")
+
+    child.type_keys("ccfoobar.lua<Esc>:w<cr>")
+    expect_buffer_matches_register("#")
+
+    child.type_keys("ccqux<Esc>:w<cr>")
+    expect_buffer_matches_register("#")
+
+    child.type_keys("ccM<Esc>:w<cr>") -- Makefile
+    expect_buffer_matches_register("#")
+
+    -- Try all existing buffer ids
+    for i=0, 6 do
+        child.type_keys("cc" .. i .. "<Esc>:w<cr>")
+        expect_buffer_matches_register("#")
+    end
+end
+T["#"]["Expand full buffername on custom save map"] = function()
+    child.api.nvim_set_keymap("n", "<C-s>", "<cmd>w<cr>", {})
+
+    child.cmd("rightbelow split foobar.lua")
+    child.cmd("rightbelow vsplit bazqux.nim")
+    child.cmd("rightbelow vsplit Makefile")
+    child.cmd("rightbelow vsplit .gitignore")
+
+    child.cmd("RegisterEditor #")
+
+    child.type_keys("ccfoobar.lua<Esc><C-s>")
+    expect_buffer_matches_register("#")
+
+    child.type_keys("ccqux<Esc><C-s>")
+    expect_buffer_matches_register("#")
+
+    child.type_keys("ccM<Esc><C-s>") -- Makefile
+    expect_buffer_matches_register("#")
+
+    -- Try all existing buffer ids
+    for i=0, 6 do
+        child.type_keys("cc" .. i .. "<Esc><C-s>")
+        expect_buffer_matches_register("#")
+    end
 end
 
 T[":"] = MiniTest.new_set()
@@ -534,11 +629,27 @@ T["="]["Special insert mode <C-r>="] = function()
     child.type_keys("i<C-r>=2+3<cr>") -- In register: "5"
     expect_buffer_matches_register("=")
 end
+T["="]["Evaluate on :w"] = function()
+    child.cmd("RegisterEditor =")
+    child.type_keys("i2+3<Esc>:w<cr>")
+    expect_buffer_matches_register("=")
+    child.type_keys("A*5<Esc>:w<cr>")
+    expect_buffer_matches_register("=")
+end
+T["="]["Evaluate on custom save map"] = function()
+    child.api.nvim_set_keymap("n", "<C-s>", "<cmd>w<cr>", {})
+
+    child.cmd("RegisterEditor =")
+    child.type_keys("i2+3<Esc><C-s>")
+    expect_buffer_matches_register("=")
+    child.type_keys("A*5<Esc><C-s>")
+    expect_buffer_matches_register("=")
+end
 
 T["_"] = MiniTest.new_set()
 
 T["_"]["Generic"] = function()
-    -- Cannot record macro
+    -- Can't record macro
     expect_explicit_yank_works("_") -- We check that it's empty like the real reg
     expect_cmdline_set_works("_")
 end
@@ -565,8 +676,8 @@ end
 T["/"] = MiniTest.new_set()
 
 T["/"]["Generic"] = function()
-    -- Weird one: can't record macro, can't explicitly yank,
-    -- but *can* set on cmdline
+    -- Can't record macro
+    -- Can't explicit yank
     expect_cmdline_set_works("/")
 end
 T["/"]["Search with / and ?"] = function()
@@ -658,8 +769,7 @@ T["/"]["Choose a search string in cmdwin"] = function()
 end
 
 T["Do not refresh buffer currently in focus (unless readonly)"] = function()
-    child.type_keys('"ayj') -- Copy 2 lines to reg a
-    child.type_keys("yj") -- Copy 2 lines to reg "
+    child.type_keys('"ayj') -- Copy 2 lines to reg a. Also copies to reg ".
     child.cmd('RegisterEditor "')
 
     child.type_keys("dw")
