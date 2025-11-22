@@ -72,7 +72,6 @@ local function set_buffer_content(buf, content, readonly)
         end
 
         vim.api.nvim_buf_set_lines(buf, 0, -1, false, content)
-        vim.api.nvim_set_option_value("modified", false, { buf = buf })
         vim.api.nvim_win_set_height(
             vim.fn.bufwinid(buf),
             math.min(#content, MAX_BUFFER_LINES)
@@ -83,6 +82,8 @@ local function set_buffer_content(buf, content, readonly)
             vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
         end
     end
+
+    vim.api.nvim_set_option_value("modified", false, { buf = buf })
 end
 
 local function open_editor_window(reg)
@@ -142,7 +143,9 @@ local function open_editor_window(reg)
     end
 
     if reg == "%" then
-        set_buffer_content(vim.fn.bufnr(), { "@%" }, readonly) -- Todo: this is dumb
+        set_buffer_content(vim.fn.bufnr(), { vim.fn.expand("%") }, readonly)
+    elseif reg == "#" then
+        set_buffer_content(vim.fn.bufnr(), { vim.fn.expand("#") }, readonly)
     else
         set_buffer_content(vim.fn.bufnr(), buf_lines, readonly)
     end

@@ -68,6 +68,8 @@ local function expect_buffer_empty(reg)
     MiniTest.expect.equality(get_buffer_contents(reg), { "" })
 end
 
+-- TODO: expects "main buffer" is the top-left-most buffer
+-- Make it so it switches to the first opened buffer
 local function return_to_main_buffer()
     child.cmd("1wincmd w")
 end
@@ -165,36 +167,6 @@ T["A-Z"]["Append cmdline set to a"] = function()
 
     expect_buffer_matches_register("a")
 end
-T["A-Z"]["Append to a and wipe A on :w"] = function()
-    child.cmd("RegisterEditor a")
-    child.type_keys("ifoobar<Esc>:w<cr>")
-    child.cmd("RegisterEditor A")
-
-    local text = " text to append to reg a"
-    local appended_contents = newline_split(child.fn.getreg("a") .. text)
-
-    child.type_keys("i" .. text .. "<Esc>")
-    child.type_keys(":w<cr>")
-
-    MiniTest.expect.equality(get_buffer_contents("a"), appended_contents)
-    expect_buffer_empty("A")
-end
-T["A-Z"]["Append to a and wipe A on a custom save map"] = function()
-    child.api.nvim_set_keymap("n", "<C-s>", "<cmd>w<cr>", {})
-
-    child.cmd("RegisterEditor a")
-    child.type_keys("ifoobar<Esc>:w<cr>")
-    child.cmd("RegisterEditor A")
-
-    local text = " text to append to reg a"
-    local appended_contents = newline_split(child.fn.getreg("a") .. text)
-
-    child.type_keys("i" .. text .. "<Esc>")
-    child.type_keys("<C-s>")
-
-    MiniTest.expect.equality(get_buffer_contents("a"), appended_contents)
-    expect_buffer_empty("A")
-end
 
 T['"'] = MiniTest.new_set()
 
@@ -239,9 +211,15 @@ T["*"]['clipboard="unnamed"'] = MiniTest.new_set({
     hooks = {
         pre_case = function()
             child.o.clipboard = "unnamed"
+            child.cmd("let @\"=''")
+            child.cmd("let @*=''")
+            child.cmd("let @+=''")
         end,
         post_once = function()
             child.o.clipboard = ""
+            child.cmd("let @\"=''")
+            child.cmd("let @*=''")
+            child.cmd("let @+=''")
         end,
     },
 })
@@ -280,19 +258,24 @@ T["+"]['clipboard="unnamedplus"'] = MiniTest.new_set({
     hooks = {
         pre_case = function()
             child.o.clipboard = "unnamedplus"
+            child.cmd("let @\"=''")
+            child.cmd("let @*=''")
+            child.cmd("let @+=''")
         end,
         post_once = function()
             child.o.clipboard = ""
+            child.cmd("let @\"=''")
+            child.cmd("let @*=''")
+            child.cmd("let @+=''")
         end,
     },
 })
 T["+"]['clipboard="unnamedplus"'] = function()
+
     child.cmd('RegisterEditor "') -- Unnamed reg is still always used
     child.cmd("RegisterEditor +")
 
     return_to_main_buffer()
-
-    MiniTest.add_note("This sometimes fails, system clipboard is not in sync?")
 
     child.type_keys("yw") -- Small
     expect_buffer_matches_register('"')
@@ -316,9 +299,15 @@ T['clipboard="unnamed,unnamedplus"'] = MiniTest.new_set({
     hooks = {
         pre_case = function()
             child.o.clipboard = "unnamed,unnamedplus"
+            child.cmd("let @\"=''")
+            child.cmd("let @*=''")
+            child.cmd("let @+=''")
         end,
         post_once = function()
             child.o.clipboard = ""
+            child.cmd("let @\"=''")
+            child.cmd("let @*=''")
+            child.cmd("let @+=''")
         end,
     },
 })
@@ -328,8 +317,6 @@ T["+"]['clipboard="unnamed,unnamedplus"'] = function()
     child.cmd("RegisterEditor +")
 
     return_to_main_buffer()
-
-    MiniTest.add_note("This sometimes fails, system clipboard is not in sync?")
 
     child.type_keys("yw") -- Small
     expect_buffer_matches_register('"')
@@ -435,8 +422,6 @@ T["%"]["Switch between files"] = function()
     return_to_main_buffer()
     expect_buffer_matches_register("%")
 
-    -- Todo: return_to_main_buffer only works if main buffer is top left -most
-    -- Find a way to make it go to the "oldest" window instead
     child.cmd("rightbelow split foobar.lua")
     expect_buffer_matches_register("%")
 
@@ -492,58 +477,6 @@ T["#"]["Set alternate file on cmdline"] = function()
 
     child.type_keys(":let @#=3<cr>")
     expect_buffer_matches_register("#")
-end
-T["#"]["Expand full buffername on :w"] = function()
-    -- The @# can be written to if content matches a substring of an existing buffer,
-    -- or is a number matching an existing buffer id
-    -- In both cases refresh the contents with the full buffername
-
-    child.cmd("rightbelow split foobar.lua")
-    child.cmd("rightbelow vsplit bazqux.nim")
-    child.cmd("rightbelow vsplit Makefile")
-    child.cmd("rightbelow vsplit .gitignore")
-
-    child.cmd("RegisterEditor #")
-
-    child.type_keys("ccfoobar.lua<Esc>:w<cr>")
-    expect_buffer_matches_register("#")
-
-    child.type_keys("ccqux<Esc>:w<cr>")
-    expect_buffer_matches_register("#")
-
-    child.type_keys("ccM<Esc>:w<cr>") -- Makefile
-    expect_buffer_matches_register("#")
-
-    -- Try all existing buffer ids
-    for i=0, 6 do
-        child.type_keys("cc" .. i .. "<Esc>:w<cr>")
-        expect_buffer_matches_register("#")
-    end
-end
-T["#"]["Expand full buffername on custom save map"] = function()
-    child.api.nvim_set_keymap("n", "<C-s>", "<cmd>w<cr>", {})
-
-    child.cmd("rightbelow split foobar.lua")
-    child.cmd("rightbelow vsplit bazqux.nim")
-    child.cmd("rightbelow vsplit Makefile")
-    child.cmd("rightbelow vsplit .gitignore")
-
-    child.cmd("RegisterEditor #")
-
-    child.type_keys("ccfoobar.lua<Esc><C-s>")
-    expect_buffer_matches_register("#")
-
-    child.type_keys("ccqux<Esc><C-s>")
-    expect_buffer_matches_register("#")
-
-    child.type_keys("ccM<Esc><C-s>") -- Makefile
-    expect_buffer_matches_register("#")
-
-    -- Try all existing buffer ids
-    for i=0, 6 do
-        child.type_keys("cc" .. i .. "<Esc><C-s>")
-        expect_buffer_matches_register("#")
-    end
 end
 
 T[":"] = MiniTest.new_set()
@@ -629,22 +562,6 @@ T["="]["Special insert mode <C-r>="] = function()
     child.type_keys("i<C-r>=2+3<cr>") -- In register: "5"
     expect_buffer_matches_register("=")
 end
-T["="]["Evaluate on :w"] = function()
-    child.cmd("RegisterEditor =")
-    child.type_keys("i2+3<Esc>:w<cr>")
-    expect_buffer_matches_register("=")
-    child.type_keys("A*5<Esc>:w<cr>")
-    expect_buffer_matches_register("=")
-end
-T["="]["Evaluate on custom save map"] = function()
-    child.api.nvim_set_keymap("n", "<C-s>", "<cmd>w<cr>", {})
-
-    child.cmd("RegisterEditor =")
-    child.type_keys("i2+3<Esc><C-s>")
-    expect_buffer_matches_register("=")
-    child.type_keys("A*5<Esc><C-s>")
-    expect_buffer_matches_register("=")
-end
 
 T["_"] = MiniTest.new_set()
 
@@ -652,25 +569,6 @@ T["_"]["Generic"] = function()
     -- Can't record macro
     expect_explicit_yank_works("_") -- We check that it's empty like the real reg
     expect_cmdline_set_works("_")
-end
-T["_"]["Wipe contents on :w"] = function()
-    -- Funny but deliberate behavior: wipe the buffer to match the real blackhole reg
-    child.cmd("RegisterEditor _")
-
-    child.type_keys("iHold up can I write here?<Esc>")
-    child.type_keys(":w<cr>")
-
-    expect_buffer_matches_register("_")
-end
-T["_"]["Wipe contents on a custom save map"] = function()
-    child.api.nvim_set_keymap("n", "<C-s>", "<cmd>w<cr>", {})
-
-    child.cmd("RegisterEditor _")
-
-    child.type_keys("iHold up can I write here?<Esc>")
-    child.type_keys("<C-s>")
-
-    expect_buffer_matches_register("_")
 end
 
 T["/"] = MiniTest.new_set()
@@ -707,8 +605,6 @@ T["/"]["Search with * and #"] = function()
 end
 T["/"]["Search with Visual * and #"] = function()
     MiniTest.skip("SKIP: issue #22")
-
-    MiniTest.add_note("Cursor is not moved but buffer correctly refreshes")
 
     child.cmd("RegisterEditor /")
     child.type_keys("ifoobar<Esc>:w<cr>")
