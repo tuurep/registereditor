@@ -432,9 +432,7 @@ T["%#"]["Switch between files"] = function()
     child.cmd("RegisterEditor #") -- Last buffer filename
     expect_buffer_matches_register("#")
 
-    MiniTest.add_note("Test passes if changed to `child.type_keys(':RegisterEditor %<cr>')`")
     child.cmd("RegisterEditor %") -- Current buffer filename
-
     expect_buffer_matches_register("%")
 
     return_to_main_buffer()

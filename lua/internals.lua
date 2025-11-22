@@ -40,7 +40,7 @@ local function set_register(reg)
 end
 
 -- set the contents of a buffer and mark it is not modified
-local function set_buffer_content(buf, content)
+local function set_buffer_content(buf, content, readonly)
     -- get existing buffer content
     local existing_content = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
 
@@ -58,12 +58,22 @@ local function set_buffer_content(buf, content)
 
     -- if the content changed, then actually modify the buffer
     if content_changed then
+        if readonly then
+            vim.api.nvim_set_option_value("readonly", false, { buf = buf })
+            vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
+        end
+
         vim.api.nvim_buf_set_lines(buf, 0, -1, false, content)
         vim.api.nvim_set_option_value("modified", false, { buf = buf })
         vim.api.nvim_win_set_height(
             vim.fn.bufwinid(buf),
             math.min(#content, MAX_BUFFER_LINES)
         )
+
+        if readonly then
+            vim.api.nvim_set_option_value("readonly", true, { buf = buf })
+            vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
+        end
     end
 end
 
@@ -116,11 +126,17 @@ local function open_editor_window(reg)
     vim.bo.swapfile = false
     vim.bo.buflisted = false
 
-    set_buffer_content(vim.fn.bufnr(), buf_lines)
-
     -- Special readonly registers
-    if reg:match("[.:%%#]") then
+    local readonly = reg:match("[.:%%#]")
+    if readonly then
         vim.bo.readonly = true
+        vim.bo.modifiable = false
+    end
+
+    if reg == "%" then
+        set_buffer_content(vim.fn.bufnr(), { "@%" }, readonly) -- Todo: this is dumb
+    else
+        set_buffer_content(vim.fn.bufnr(), buf_lines, readonly)
     end
 
     vim.api.nvim_create_autocmd({ "BufWriteCmd" }, {
@@ -239,9 +255,11 @@ M.refresh_all_registereditor_buffers = function(filter, content)
         -- get register content
         local buffer_content = content or lua_utils.newline_split(vim.fn.getreg(reg))
 
+        local readonly = reg:match("[.:%%#]")
+
         -- update the buffer with the register contents
         vim.schedule(function()
-            set_buffer_content(buf, buffer_content)
+            set_buffer_content(buf, buffer_content, readonly)
         end)
     end)
 end
