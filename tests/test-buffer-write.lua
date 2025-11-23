@@ -93,7 +93,6 @@ local function expect_basic_write(reg, save_keys)
     expect_buffer_matches_register(reg)
 
     -- Multi line
-    child.cmd("RegisterEditor " .. reg)
     child.type_keys("obazqux<cr><Esc>" .. save_keys)
     expect_buffer_is_not_empty(reg)
     expect_buffer_matches_register(reg)
@@ -113,21 +112,16 @@ T["A-Z"] = function()
     child.type_keys("iinitial<Esc>:w<cr>")
     child.cmd("RegisterEditor A")
 
-    local text = " text to append to reg a"
-    local appended_contents = newline_split(child.fn.getreg("a") .. text)
+    child.type_keys("ifoo<Esc>:w<cr>")
 
-    child.type_keys("i" .. text .. "<Esc>")
-    child.type_keys(":w<cr>")
-
-    MiniTest.expect.equality(get_buffer_contents("a"), appended_contents)
+    expect_buffer_is_not_empty("a")
+    expect_buffer_matches_register("a")
     expect_buffer_is_empty("A")
 
-    text = " foo\nbar\n"
+    child.type_keys("i additional<cr>bar<cr><Esc>:w<cr>")
 
-    child.type_keys("i" .. text .. "<Esc>")
-    child.type_keys(":w<cr>")
-
-    MiniTest.expect.equality(get_buffer_contents("a"), appended_contents)
+    expect_buffer_is_not_empty("a")
+    expect_buffer_matches_register("a")
     expect_buffer_is_empty("A")
 end
 
@@ -158,6 +152,7 @@ T["1-9"] = function()
     for i=1, 9 do
         local reg = tostring(i)
         expect_basic_write(reg, ":w<cr>")
+        vim.cmd("bd")
     end
 end
 
@@ -213,6 +208,14 @@ T["="] = function()
     child.type_keys("A*5<Esc>:w<cr>")
     expect_buffer_is_not_empty("=")
     expect_buffer_matches_register("=")
+
+    -- Note (but not relevant to this test):
+    --
+    -- The = register can't be set as a multi line table
+    -- For example `vim.fn.setreg("=", {"2", "+", "3"})`
+    -- But it can contain newlines, and our `set_register()` concats the lines in a way it
+    -- works. If written with multiple lines, seems like it evaluates the first line and
+    -- ignores the rest.
 end
 
 T["_"] = function()
@@ -228,11 +231,11 @@ T["_"] = function()
 end
 
 T["/"] = function()
-    -- Can't write multiline contents
-    child.cmd("RegisterEditor /")
-    child.type_keys("idolor<Esc>:w<cr>")
-    expect_buffer_is_not_empty("/")
-    expect_buffer_matches_register("/")
+    -- Note: the / register can't be set as a multi line table
+    -- For example `vim.fn.setreg("/", {"a", "b", "c"})`
+    -- But it can contain newlines, and our `set_register()` concats the lines in a way it
+    -- works
+    expect_basic_write("/", ":w<cr>")
 end
 
 -- Three readonly registers . : % (can't be written to)
@@ -275,24 +278,19 @@ T["Custom save map"]["A-Z"] = function()
     -- @A-Z buffers append to the lowercase counterpart on write, and wipe self.
 
     child.cmd("RegisterEditor a")
-    child.type_keys("iinitial<Esc>:w<cr>")
+    child.type_keys("iinitial<Esc><C-s>")
     child.cmd("RegisterEditor A")
 
-    local text = " foo"
-    local appended_contents = newline_split(child.fn.getreg("a") .. text)
+    child.type_keys("ifoo<Esc><C-s>")
 
-    child.type_keys("i" .. text .. "<Esc>")
-    child.type_keys("<C-s>")
-
-    MiniTest.expect.equality(get_buffer_contents("a"), appended_contents)
+    expect_buffer_is_not_empty("a")
+    expect_buffer_matches_register("a")
     expect_buffer_is_empty("A")
 
-    text = " foo\nbar\n"
+    child.type_keys("i additional<cr>bar<cr><Esc><C-s>")
 
-    child.type_keys("i" .. text .. "<Esc>")
-    child.type_keys("<C-s>")
-
-    MiniTest.expect.equality(get_buffer_contents("a"), appended_contents)
+    expect_buffer_is_not_empty("a")
+    expect_buffer_matches_register("a")
     expect_buffer_is_empty("A")
 end
 
@@ -323,6 +321,7 @@ T["Custom save map"]["1-9"] = function()
     for i=1, 9 do
         local reg = tostring(i)
         expect_basic_write(reg, "<C-s>")
+        vim.cmd("bd")
     end
 end
 
@@ -378,6 +377,14 @@ T["Custom save map"]["="] = function()
     child.type_keys("A*5<Esc><C-s>")
     expect_buffer_is_not_empty("=")
     expect_buffer_matches_register("=")
+
+    -- Note (but not relevant to this test):
+    --
+    -- The = register can't be set as a multi line table
+    -- For example `vim.fn.setreg("=", {"2", "+", "3"})`
+    -- But it can contain newlines, and our `set_register()` concats the lines in a way it
+    -- works. If written with multiple lines, seems like it evaluates the first line and
+    -- ignores the rest.
 end
 
 T["Custom save map"]["_"] = function()
@@ -393,11 +400,11 @@ T["Custom save map"]["_"] = function()
 end
 
 T["Custom save map"]["/"] = function()
-    -- Can't write multiline contents
-    child.cmd("RegisterEditor /")
-    child.type_keys("idolor<Esc><C-s>")
-    expect_buffer_is_not_empty("/")
-    expect_buffer_matches_register("/")
+    -- Note: the / register can't be set as a multi line table
+    -- For example `vim.fn.setreg("/", {"a", "b", "c"})`
+    -- But it can contain newlines, and our `set_register()` concats the lines in a way it
+    -- works
+    expect_basic_write("/", "<C-s>")
 end
 
 return T

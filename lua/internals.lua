@@ -7,41 +7,27 @@ local M = {}
 local MAX_BUFFER_LINES = 20
 
 local function set_register(reg)
-    -- HACKS ahead: this will all be redesigned in
-    -- https://github.com/tuurep/registereditor/issues/19
-
     local buf_lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    local reg_content = table.concat(buf_lines, "\n")
 
-    -- Registers that need to update self buffer immediately after write
+    -- Registers that need to update self buffer when writing
     if (reg == "#" or reg == "=") then
-        vim.fn.setreg(reg, buf_lines[1])
+        vim.fn.setreg(reg, reg_content)
         M.refresh_all_registereditor_buffers({ [reg] = true })
-        return
-    end
 
-    vim.fn.setreg(reg, "")
-
-    local last_line = table.remove(buf_lines)
-
-    if #buf_lines > 0 then
-        vim.fn.setreg(reg, buf_lines)
-    end
-
-    local is_append_reg = reg:match("[A-Z]")
-    local is_blackhole_reg = reg == "_"
-
-    -- Saving a buffer with a newline at the end puts ^J at the end of register
-    -- If last line is text, ^J is omitted: for macros or something like "qy$
-    if not is_append_reg and last_line ~= "" then
-        vim.cmd("let @" .. reg .. " ..= '" .. last_line .. "'")
-    else
-        vim.cmd("let @" .. reg .. " = '" .. last_line .. "'")
+    -- Registers that need to wipe self buffer when writing
+    elseif reg:match("[A-Z]") then
+        local target_reg = reg:lower()
+        local appended = vim.fn.getreg(target_reg) .. reg_content
+        vim.fn.setreg(target_reg, appended)
         M.refresh_all_registereditor_buffers({ [reg:lower()] = true })
-    end
-
-    -- Registers that should wipe their own buffers on save
-    if is_append_reg or is_blackhole_reg then
         vim.api.nvim_buf_set_lines(0, 0, -1, false, {})
+    elseif reg == "_" then
+        vim.api.nvim_buf_set_lines(0, 0, -1, false, {})
+
+    -- The common situation
+    else
+        vim.fn.setreg(reg, reg_content)
     end
 
     vim.bo.modified = false
