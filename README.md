@@ -27,9 +27,11 @@ With `lazy.nvim`:
 
 ```lua
 {
-    'tuurep/registereditor',
+    'tuurep/registereditor'
 }
 ```
+
+A `setup()` step is planned, but only for configuration, not loading: #8
 
 ## Usage
 
@@ -49,7 +51,10 @@ Newlines in registers are stored as `^J` (see `:h NL-used-for-Nul`). This causes
 
 That's why macros should be written only on the first line of the registereditor buffer with no empty lines after.
 
-When a newline at the end of the register is desired, the registereditor buffer should end in an empty line.
+~~When a newline at the end of the register is desired, the registereditor buffer should end in an empty line.~~
+
+**Todo:** This is an incomplete hack. Proper selection type (charwise/linewise/blockwise)
+support for registereditor buffers planned: #19
 
 ## Editing registers with no plugins at all
 
